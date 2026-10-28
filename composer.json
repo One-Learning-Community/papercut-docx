@@ -1,0 +1,66 @@
+{
+    "name": "papercut/docx",
+    "description": "Word (.docx) export for Papercut documents.",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/One-Learning-Community/papercut",
+    "support": {
+        "issues": "https://github.com/One-Learning-Community/papercut/issues",
+        "source": "https://github.com/One-Learning-Community/papercut"
+    },
+    "authors": [
+        {
+            "name": "One Learning Community",
+            "role": "Maintainer"
+        }
+    ],
+    "keywords": [
+        "docx",
+        "word",
+        "export",
+        "document",
+        "papercut"
+    ],
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "papercut/core": "0.1.x-dev"
+                }
+            }
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-zip": "*",
+        "dskripchenko/php-docx": "^1.17",
+        "papercut/core": "^0.1"
+    },
+    "require-dev": {
+        "bacon/bacon-qr-code": "^3.1",
+        "phpstan/phpstan": "^2.3",
+        "phpunit/phpunit": "^13.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Papercut\\Docx\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Papercut\\Docx\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --memory-limit=1G"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
