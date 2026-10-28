@@ -51,7 +51,7 @@ final class DocxPatcherTest extends TestCase
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('php-docx output changed: ');
-        DocxPatcher::patch($broken, new PatchSpec(11906, 16838, 'Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
+        DocxPatcher::patch($broken, new PatchSpec('Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
     }
 
     public function test_a_shading_marker_left_unpatched_fails_loudly(): void
@@ -70,6 +70,6 @@ final class DocxPatcherTest extends TestCase
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('php-docx output changed: run highlight in word/document.xml not found');
-        DocxPatcher::patch($changed, new PatchSpec(11906, 16838, 'Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
+        DocxPatcher::patch($changed, new PatchSpec('Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
     }
 }

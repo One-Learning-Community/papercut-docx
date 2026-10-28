@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Papercut\Docx\Package;
 
 /**
- * Fixes php-docx 1.17's output where it can't express what Papercut needs: `left`/`right` alignment
- * (Google Docs ignores `start`/`end`), run shading in any colour, any page size, the theme's default font, and the
- * document language.
+ * Fixes php-docx's output where it can't express what Papercut needs: `left`/`right` alignment
+ * (Google Docs ignores `start`/`end`), run shading in any colour, the theme's default font, and the document language.
  * It edits the exact markup php-docx writes and throws when that markup changes, so an upgrade fails loudly.
  */
 final class DocxPatcher
@@ -36,14 +35,6 @@ final class DocxPatcher
                 $parts[$name] = $xml;
             }
         }
-
-        $orient = $spec->pageWidthTwips > $spec->pageHeightTwips ? 'landscape' : 'portrait';
-        $parts['word/document.xml'] = self::replaceOnce(
-            '~<w:pgSz w:w="\d+" w:h="\d+" w:orient="(?:portrait|landscape)"/>~',
-            sprintf('<w:pgSz w:w="%d" w:h="%d" w:orient="%s"/>', $spec->pageWidthTwips, $spec->pageHeightTwips, $orient),
-            $parts['word/document.xml'] ?? '',
-            'page size in word/document.xml',
-        );
 
         $font = self::attr($spec->fontFamily);
         $lang = $spec->lang === null ? '' : '<w:lang w:val="' . self::attr($spec->lang) . '"/>';

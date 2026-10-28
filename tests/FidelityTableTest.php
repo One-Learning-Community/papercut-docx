@@ -29,10 +29,8 @@ final class FidelityTableTest extends TestCase
     public static function rows(): iterable
     {
         $body = 'page > body';
-        yield 'later page setup' => [static fn () => Document::make(Page::a4()->body('a'), Page::a5()->body('b')), FidelityLevel::Approximated, "page setup other than the first page's", 'page[1]'];
-        yield 'later header' => [static fn () => Document::make(Page::a4()->body('a'), Page::a4()->header('h')->body('b')), FidelityLevel::Approximated, "header or footer other than the first page's", 'page[1]'];
-        yield 'background' => [static fn () => Page::a4()->background('bg')->body('x'), FidelityLevel::Dropped, 'background layer', 'page > background'];
-        yield 'overlay' => [static fn () => Page::a4()->body('x')->overlay(Place::at(pt(0), pt(0), 'o')), FidelityLevel::Dropped, 'overlay layer', 'page > overlay'];
+        yield 'background' => [static fn () => Page::a4()->background('bg')->body('x'), FidelityLevel::Dropped, 'background layer', 'page > background > text[0]'];
+        yield 'overlay' => [static fn () => Page::a4()->body('x')->overlay(Place::at(pt(0), pt(0), 'o')), FidelityLevel::Dropped, 'overlay layer', 'page > overlay > place[0] > text[0]'];
         yield 'pdf template' => [static fn () => Page::template(PdfPage::bytes(self::pdf()))->body('x'), FidelityLevel::Dropped, 'PDF page template', 'page'];
         yield 'min-lines' => [static fn () => Text::make('x')->minLines(3), FidelityLevel::Approximated, 'min-lines 3', "$body > text[0]"];
         yield 'wrap' => [static fn () => Row::make(View::make('a')->width(pt(300)), View::make('b')->width(pt(300)))->wrap(), FidelityLevel::Approximated, 'wrap', "$body > row[0]"];

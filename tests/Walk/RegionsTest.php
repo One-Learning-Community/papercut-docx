@@ -64,10 +64,10 @@ final class RegionsTest extends TestCase
     public function test_layers_and_pdf_only_nodes_are_dropped(): void
     {
         self::export(Page::a4()->background(Text::make('bg'))->body(Text::make('x')));
-        self::assertSame(['Dropped background layer @ page > background'], self::exportedReports());
+        self::assertSame(['Dropped background layer @ page > background > text[0]'], self::exportedReports());
 
         self::export(Page::a4()->body(Text::make('x'))->overlay(Place::at(pt(0), pt(0), Text::make('o'))));
-        self::assertSame(['Dropped overlay layer @ page > overlay'], self::exportedReports());
+        self::assertSame(['Dropped overlay layer @ page > overlay > place[0] > text[0]'], self::exportedReports());
 
         $template = Document::make(Page::a4()->body('t'))->toPdf()->bytes();
         self::export(Page::template(PdfPage::bytes($template))->body(Text::make('x')));

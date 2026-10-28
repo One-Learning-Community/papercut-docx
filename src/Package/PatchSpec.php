@@ -8,8 +8,6 @@ namespace Papercut\Docx\Package;
 final readonly class PatchSpec
 {
     public function __construct(
-        public int $pageWidthTwips,
-        public int $pageHeightTwips,
         public string $fontFamily,
         public int $fontSizeHalfPoints,
         public ?string $lang,

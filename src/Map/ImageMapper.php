@@ -119,6 +119,24 @@ final class ImageMapper
         return [$this->picture($png, $s, $w, $h, $path, $doc->title === '' ? null : $doc->title)];
     }
 
+    /**
+     * The width a picture asks for when nothing constrains it, as the PDF's layouters measure it: an explicit
+     * width, else the natural width plus padding and border (a QR code takes its height, else 25mm).
+     */
+    public function intrinsicWidth(Image|QrCode|Svg $n, ComputedStyle $s): float
+    {
+        if ($s->width instanceof Length) {
+            return $s->width->points;
+        }
+        $decor = $s->padding->horizontal() + $s->borderWidth->horizontal();
+
+        return match (true) {
+            $n instanceof QrCode => $s->height instanceof Length ? $s->height->points : mm(25)->points,
+            $n instanceof Svg => $n->document()->widthPt + $decor,
+            default => $this->load($n)->widthPx * 0.75 + $decor,
+        };
+    }
+
     /** A PNG Papercut drew, with the node's opacity applied. */
     private function picture(string $png, ComputedStyle $s, float $w, float $h, string $path, ?string $alt): DocxImage
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Tests\Package;
 
-use Papercut\{Document, Page, Text};
+use Papercut\{Document, Page, PageBreak, Text};
 use Papercut\Docx\Tests\Support\Styles;
 use PHPUnit\Framework\TestCase;
 
@@ -40,18 +40,62 @@ final class PageSetupTest extends TestCase
         }
     }
 
-    public function test_pages_are_joined_by_page_breaks_and_later_setups_are_approximated(): void
+    public function test_a_page_with_another_setup_starts_a_section(): void
     {
         $d = self::export(Document::make(
             Page::a4()->body(Text::make('one')),
             Page::a5()->header(Text::make('h'))->body(Text::make('two')),
         ));
-        self::assertSame(1, $d->count("//w:br[@w:type='page']"));
+        self::assertSame(0, $d->count("//w:br[@w:type='page']"));
         self::assertSame(['one', 'two'], $d->values('/w:document/w:body/w:p/w:r/w:t[normalize-space()]'));
-        self::assertSame([
-            "Approximated page setup other than the first page's @ page[1]",
-            "Approximated header or footer other than the first page's @ page[1]",
-        ], self::exportedReports());
+        // The first section ends in its last paragraph, the second at the end of the body.
+        self::assertSame(['11906', '16838'], [$d->value('//w:p/w:pPr/w:sectPr/w:pgSz/@w:w'), $d->value('//w:p/w:pPr/w:sectPr/w:pgSz/@w:h')]);
+        self::assertSame(['8391', '11906'], [$d->value(self::SECT . '/w:pgSz/@w:w'), $d->value(self::SECT . '/w:pgSz/@w:h')]);
+        self::assertSame(0, $d->count('//w:p/w:pPr/w:sectPr/w:headerReference'));
+        self::assertSame(1, $d->count(self::SECT . '/w:headerReference'));
+        self::assertSame([], self::exportedReports());
+    }
+
+    public function test_pages_that_look_alike_share_a_section(): void
+    {
+        $d = self::export(Document::make(
+            Page::a4()->header(Text::make('h'))->body(Text::make('one')),
+            Page::a4()->header(Text::make('h'))->body(Text::make('two')),
+        ));
+        self::assertSame(1, $d->count("//w:br[@w:type='page']"));
+        self::assertSame(1, $d->count('//w:sectPr'));
+    }
+
+    public function test_a_later_section_without_a_header_does_not_show_the_previous_one(): void
+    {
+        $d = self::export(Document::make(
+            Page::a4()->header(Text::make('h'))->footer(Text::make('f'))->body(Text::make('one')),
+            Page::a4()->body(Text::make('two')),
+        ));
+        self::assertSame(2, $d->count('//w:sectPr'));
+        $last = (string) $d->value(self::SECT . "/w:headerReference[@w:type='default']/@r:id");
+        $target = $d->xpath('word/_rels/document.xml.rels')->evaluate("string(//*[@Id='$last']/@Target)");
+        self::assertSame('', trim($d->bodyText('word/' . $target)));
+        self::assertSame(1, $d->count(self::SECT . "/w:footerReference[@w:type='default']"));
+    }
+
+    public function test_no_blank_page_between_sections(): void
+    {
+        foreach ([
+            Document::make(Page::a4()->body(Text::make('one')->breakAfter()), Page::a5()->body(Text::make('two'))),
+            Document::make(Page::a4()->body(Text::make('one')), Page::a5()->body(Text::make('two')->breakBefore())),
+            Document::make(Page::a4()->body(Text::make('one')), Page::a5()->body(PageBreak::make(), Text::make('two'))),
+        ] as $doc) {
+            $d = self::export($doc);
+            self::assertSame(0, $d->count("//w:br[@w:type='page']") + $d->count('//w:pageBreakBefore'));
+            self::assertSame(2, $d->count('//w:sectPr'));
+        }
+    }
+
+    public function test_a_page_opening_with_a_page_break_breaks_once(): void
+    {
+        $d = self::export(Document::make(Page::a4()->body(Text::make('one')), Page::a4()->body(PageBreak::make(), Text::make('two'))));
+        self::assertSame(1, $d->count("//w:br[@w:type='page']"));
     }
 
     public function test_core_properties(): void

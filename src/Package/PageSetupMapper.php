@@ -8,10 +8,7 @@ use Dskripchenko\PhpDocx\Style\{Orientation, PageSetup, PaperSize};
 use Papercut\Docx\Map\Units;
 use Papercut\Page;
 
-/**
- * A Papercut page as Word's section setup. php-docx only names five paper sizes, so any other size is
- * written as A4 here and given its real size by DocxPatcher.
- */
+/** A Papercut page as Word's section setup, at its exact size. The paper name is kept when one matches. */
 final class PageSetupMapper
 {
     /** Points per paper size, portrait. */
@@ -45,12 +42,8 @@ final class PageSetupMapper
             marginLeftTwips: Units::tw($m->left->points),
             headerOffsetTwips: Units::tw($m->top->points),
             footerOffsetTwips: Units::tw($m->bottom->points),
+            widthTwips: Units::tw($page->width()),
+            heightTwips: Units::tw($page->height()),
         );
-    }
-
-    /** @return array{int, int} width and height in twips, as the page is oriented */
-    public static function pageSize(Page $page): array
-    {
-        return [Units::tw($page->width()), Units::tw($page->height())];
     }
 }
