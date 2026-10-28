@@ -7,7 +7,7 @@ namespace Papercut\Docx\Walk;
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle};
 use Papercut\{Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, View};
-use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, ListMapper, RowMapper, TableMapper, TextMapper};
+use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, ListMapper, RowMapper, TableMapper, TextMapper};
 use Papercut\Export\Fidelity;
 use Papercut\Layout\WidthResolver;
 use Papercut\Style\{Align, ComputedStyle, Direction, Justify, TextAlign};
@@ -94,10 +94,16 @@ final class DocxVisitor implements TreeVisitor
             return false;
         }
         $parent = $this->top();
+        // The opacity in effect here: this node's times its ancestors' (a faded style carries the product).
+        $opacity = ($parent->style->opacity ?? 1.0) * $style->opacity;
+        if ($opacity < 1.0) {
+            $style = Fade::style($style, $opacity, $parent->backdrop);
+        }
         $width = $this->outerWidth($node, $style, $parent, $at);
         $content = max(0.0, $width - $style->padding->horizontal() - $style->borderWidth->horizontal());
         $isRow = $node instanceof View && $style->direction === Direction::Row;
         $frame = new Frame($node, $style, $width, $content, $isRow);
+        $frame->backdrop = Fade::under($style->background, $parent->backdrop);
         if ($node instanceof View && $isRow) {
             $frame->lines = $this->widths->flexLines($node, $style, $width);
             foreach ($frame->lines as $line) {
@@ -132,6 +138,7 @@ final class DocxVisitor implements TreeVisitor
         }
         $frame = array_pop($this->stack);
         \assert($frame instanceof Frame);
+        $style = $frame->style ?? $style;
         $parent = $this->top();
 
         if ($node instanceof TableCell && $parent->node instanceof TableRow) {
@@ -148,12 +155,14 @@ final class DocxVisitor implements TreeVisitor
         $glyph = TextMapper::glyph($node, $style);
         $blocks = match (true) {
             $glyph !== null => [$this->text->glyphParagraph($glyph, $style)],
-            $node instanceof Text => [$this->text->paragraph($node, $style, $at, $this->links === [] ? null : end($this->links))],
+            $node instanceof Text => [$this->text->paragraph($node, $style, $at, $this->links === [] ? null : end($this->links), $frame->backdrop)],
             $node instanceof PageNumber => [$this->text->pageNumber($node, $style)],
             $node instanceof Spacer => $this->spacer($node, $parent, $at),
             $node instanceof PageBreak => [new DocxPageBreak()],
             $node instanceof Image => $this->images->image($node, $style, $frame, $at->path()),
-            $node instanceof QrCode, $node instanceof Svg, $node instanceof PdfPage, $node instanceof Place => $this->drop($node, $at),
+            $node instanceof QrCode => $this->images->qr($node, $style, $frame, $at->path()),
+            $node instanceof Svg => $this->images->svg($node, $style, $frame, $at->path()),
+            $node instanceof PdfPage, $node instanceof Place => $this->drop($node, $at),
             $node instanceof ListNode => $this->leaveList($frame),
             $node instanceof ListItem => $this->lists->item(Flow::blocks($frame)),
             $node instanceof Link => $this->leaveLink($frame),
@@ -168,16 +177,13 @@ final class DocxVisitor implements TreeVisitor
             Align::End => Alignment::End,
             default => null,
         };
-        if ($node instanceof Image) {
+        $picture = $node instanceof Image || $node instanceof QrCode || $node instanceof Svg;
+        if ($picture) {
             $blocks = array_map(static fn (BlockElement $b): BlockElement => $b instanceof DocxImage
                 ? new Paragraph([$b], new ParagraphStyle(alignment: $crossJc ?? Alignment::Start, lineSpacingTwips: 240, lineSpacingRule: 'auto'))
                 : $b, $blocks);
         } elseif ($node instanceof Text && $crossJc !== null && $style->textAlign === TextAlign::Left) {
             $blocks = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? Flow::withParagraph($b, ['alignment' => $crossJc]) : $b, $blocks);
-        }
-
-        if ($style->opacity < 1.0) {
-            $this->fidelity->dropped('opacity', $at->path());
         }
 
         // A child of a row becomes a cell, which carries its box itself; elsewhere a decorated box is wrapped.

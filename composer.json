@@ -44,6 +44,11 @@
         "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.4"
     },
+    "suggest": {
+        "ext-gd": "Pictures in Word: WebP and AVIF images, image cover and opacity, and plain QR codes",
+        "ext-imagick": "Styled QR codes and SVG in Word (SVG needs an Imagick build that reads SVG)",
+        "bacon/bacon-qr-code": "Styled QR codes (with ext-imagick)"
+    },
     "autoload": {
         "psr-4": {
             "Papercut\\Docx\\": "src/"

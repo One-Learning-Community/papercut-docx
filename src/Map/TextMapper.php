@@ -7,6 +7,7 @@ namespace Papercut\Docx\Map;
 use Dskripchenko\PhpDocx\Element\{Field, Hyperlink, InlineElement, LineBreak, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle, RunStyle};
 use Papercut\{Node, PageNumber, Text, View};
+use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Exception\InvalidValue;
 use Papercut\Export\Fidelity;
 use Papercut\Paint\Link;
@@ -24,19 +25,24 @@ final class TextMapper
     }
 
     /** @param ?string $blockHref the enclosing block link, applied to runs without a link of their own */
-    public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null): Paragraph
+    /** @param ?Color $backdrop what faded text lies on (white when null) */
+    public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null, ?Color $backdrop = null): Paragraph
     {
+        $backdrop ??= Color::white();
         $children = [];
         foreach ($t->spanList() as $span) {
             if ($span->lineBreak) {
                 $children[] = new LineBreak();
                 continue;
             }
-            $rs = self::runStyle($s->child($span->style));
-            $bg = Units::fill($span->style->background);
-            if ($bg !== null && $span->style->background !== null) {
-                $rs = new RunStyle(...[...get_object_vars($rs), 'backgroundColor' => $bg, 'highlight' => self::highlight($span->style->background)]);
-                $this->fidelity->approximated('span background', $at->path());
+            // A span's own colours fade with the text; inherited ones already have.
+            $cs = $s->child($span->style);
+            $spanBg = Fade::over($span->style->background, $s->opacity, $backdrop);
+            $rs = self::runStyle($span->style->color === null ? $cs : new ComputedStyle(...[...get_object_vars($cs), 'color' => Fade::over($cs->color, $s->opacity, $spanBg ?? $backdrop) ?? $cs->color]));
+            $bg = Units::fill($spanBg);
+            if ($bg !== null) {
+                // php-docx writes no run shading, but writes a highlight as given: DocxPatcher turns this one into w:shd.
+                $rs = new RunStyle(...[...get_object_vars($rs), 'highlight' => DocxPatcher::shading($bg)]);
             }
             $run = new Run($span->text, $rs);
             $href = $span->href ?? $blockHref;
@@ -138,37 +144,6 @@ final class TextMapper
             [new Run($glyph, new RunStyle(sizeHalfPoints: (int) round($size * 2), color: Units::hex($s->borderColor)))],
             new ParagraphStyle(lineSpacingTwips: 240, lineSpacingRule: 'auto'),
         );
-    }
-
-    /**
-     * The nearest of Word's named highlight colours by hue (php-docx writes no run shading): pale tints, as
-     * text backgrounds usually are, map to the light highlights; greys map to light grey.
-     */
-    public static function highlight(Color $c): ?string
-    {
-        $a = max(0.0, min(1.0, $c->alpha));
-        [$r, $g, $b] = array_map(static fn (int $v): float => ($v * $a + 255 * (1 - $a)) / 255, [$c->r, $c->g, $c->b]);
-        $max = max($r, $g, $b);
-        $min = min($r, $g, $b);
-        if ($a <= 0.0) {
-            return null;
-        }
-        if ($max - $min < 0.08) {
-            return $max < 0.5 ? 'darkGray' : 'lightGray';
-        }
-        $d = $max - $min;
-        $hue = match (true) {
-            $max === $r => fmod(60 * (($g - $b) / $d) + 360, 360),
-            $max === $g => 60 * (($b - $r) / $d) + 120,
-            default => 60 * (($r - $g) / $d) + 240,
-        };
-
-        return match (true) {
-            $hue >= 35 && $hue < 75 => 'yellow',
-            $hue >= 75 && $hue < 165 => 'green',
-            $hue >= 165 && $hue < 265 => 'cyan',
-            default => 'magenta',
-        };
     }
 
     /** @throws InvalidValue for a scheme other than http, https, mailto, tel or a #fragment */

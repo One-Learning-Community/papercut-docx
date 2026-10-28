@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Tests\Walk;
 
-use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, QrCode, Span, Svg, Text};
+use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, Span, Text};
 use Papercut\Docx\Tests\Support\Styles;
 use Papercut\Exception\InvalidValue;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Papercut\pt;
 
 final class RegionsTest extends TestCase
 {
@@ -73,15 +73,7 @@ final class RegionsTest extends TestCase
         self::export(Page::template(PdfPage::bytes($template))->body(Text::make('x')));
         self::assertSame(['Dropped PDF page template @ page'], self::exportedReports());
 
-        self::export(Column::make(
-            PdfPage::bytes($template),
-            QrCode::make('hello')->width(mm(20)),
-            Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>'),
-        ));
-        self::assertSame([
-            'Dropped pdf-page @ page > body > column[0] > pdf-page[0]',
-            'Dropped qr-code @ page > body > column[0] > qr-code[1]',
-            'Dropped svg @ page > body > column[0] > svg[2]',
-        ], self::exportedReports());
+        self::export(Column::make(PdfPage::bytes($template)));
+        self::assertSame(['Dropped pdf-page @ page > body > column[0] > pdf-page[0]'], self::exportedReports());
     }
 }

@@ -8,6 +8,7 @@ use Dskripchenko\PhpDocx\Element\{BlockElement, TableCell, TableRow};
 use Papercut\Layout\FlexSlot;
 use Papercut\Node;
 use Papercut\Style\ComputedStyle;
+use Papercut\Value\Color;
 
 /** One open node during the walk, collecting what its children produced. */
 final class Frame
@@ -28,6 +29,8 @@ final class Frame
     public int $column = 0;
     /** Whether this table row is a header row. */
     public bool $header = false;
+    /** What a faded child lies on: the nearest fill, else white. */
+    public Color $backdrop;
 
     public function __construct(
         public readonly ?Node $node,
@@ -38,5 +41,6 @@ final class Frame
         public readonly float $content,
         public readonly bool $isRow = false,
     ) {
+        $this->backdrop = Color::white();
     }
 }

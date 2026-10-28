@@ -74,12 +74,10 @@ final class BoxMapperTest extends TestCase
         self::assertSame(1, $d->count('//w:tbl'));
     }
 
-    public function test_radius_and_opacity_are_dropped(): void
+    public function test_radius_is_dropped(): void
     {
         self::export(Column::make(Text::make('x'))->padding(pt(4))->radius(pt(6)));
         self::assertSame(['Dropped radius @ page > body > column[0]'], self::exportedReports());
-        self::export(Column::make(Text::make('x'))->padding(pt(4))->opacity(0.5));
-        self::assertSame(['Dropped opacity @ page > body > column[0]'], self::exportedReports());
     }
 
     public function test_a_box_of_boxes_is_one_table_with_a_row_each(): void

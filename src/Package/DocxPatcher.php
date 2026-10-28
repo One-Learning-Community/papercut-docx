@@ -6,19 +6,34 @@ namespace Papercut\Docx\Package;
 
 /**
  * Fixes php-docx 1.17's output where it can't express what Papercut needs: `left`/`right` alignment
- * (Google Docs ignores `start`/`end`), any page size, the theme's default font, and the document language.
+ * (Google Docs ignores `start`/`end`), run shading in any colour, any page size, the theme's default font, and the
+ * document language.
  * It edits the exact markup php-docx writes and throws when that markup changes, so an upgrade fails loudly.
  */
 final class DocxPatcher
 {
     private const string DOC_DEFAULTS = '<w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault>';
 
+    /** Marks a run's highlight as run shading in a colour of its own; see shading(). */
+    private const string SHADING = 'papercut-shd-';
+
+    /** A highlight value patch() turns into run shading in $hex (six lower-case hex digits). */
+    public static function shading(string $hex): string
+    {
+        return self::SHADING . $hex;
+    }
+
     public static function patch(string $bytes, PatchSpec $spec): string
     {
         $parts = self::read($bytes);
         foreach ($parts as $name => $xml) {
             if (preg_match('~^word/(document|styles|header\d+|footer\d+)\.xml$~', $name) === 1) {
-                $parts[$name] = str_replace(['<w:jc w:val="start"/>', '<w:jc w:val="end"/>'], ['<w:jc w:val="left"/>', '<w:jc w:val="right"/>'], $xml);
+                $xml = str_replace(['<w:jc w:val="start"/>', '<w:jc w:val="end"/>'], ['<w:jc w:val="left"/>', '<w:jc w:val="right"/>'], $xml);
+                $xml = (string) preg_replace('~<w:highlight w:val="' . self::SHADING . '([0-9a-f]{6})"/>~', '<w:shd w:val="clear" w:color="auto" w:fill="$1"/>', $xml);
+                if (str_contains($xml, self::SHADING)) {
+                    throw new \LogicException('php-docx output changed: run highlight in ' . $name . ' not found');
+                }
+                $parts[$name] = $xml;
             }
         }
 

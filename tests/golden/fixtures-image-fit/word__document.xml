@@ -25,7 +25,7 @@
     </wp:inline>
 </w:drawing></w:r></w:p></w:tc></w:tr></w:tbl><w:p><w:pPr><w:spacing w:line="2" w:lineRule="exact"></w:spacing></w:pPr><w:r><w:rPr><w:sz w:val="2"></w:sz><w:szCs w:val="2"></w:szCs></w:rPr><w:t xml:space="preserve"></w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:type="dxa" w:w="100"></w:tcW></w:tcPr><w:p><w:pPr><w:spacing w:line="2" w:lineRule="exact"></w:spacing></w:pPr><w:r><w:rPr><w:sz w:val="2"></w:sz><w:szCs w:val="2"></w:szCs></w:rPr><w:t xml:space="preserve"></w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:type="dxa" w:w="2688"></w:tcW></w:tcPr><w:p><w:pPr><w:widowControl></w:widowControl><w:spacing w:after="40" w:line="278" w:lineRule="auto"></w:spacing></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Inter" w:cs="Inter" w:hAnsi="Inter"></w:rFonts><w:color w:val="64748b"></w:color><w:sz w:val="16"></w:sz><w:szCs w:val="16"></w:szCs></w:rPr><w:t xml:space="preserve">cover</w:t></w:r></w:p><w:tbl><w:tblPr><w:tblW w:type="dxa" w:w="2268"></w:tblW><w:tblBorders><w:top w:color="auto" w:space="0" w:sz="0" w:val="none"></w:top><w:left w:color="auto" w:space="0" w:sz="0" w:val="none"></w:left><w:bottom w:color="auto" w:space="0" w:sz="0" w:val="none"></w:bottom><w:right w:color="auto" w:space="0" w:sz="0" w:val="none"></w:right><w:insideH w:color="auto" w:space="0" w:sz="0" w:val="none"></w:insideH><w:insideV w:color="auto" w:space="0" w:sz="0" w:val="none"></w:insideV></w:tblBorders><w:tblLayout w:type="fixed"></w:tblLayout><w:tblCellMar><w:top w:type="dxa" w:w="1"></w:top><w:left w:type="dxa" w:w="0"></w:left><w:bottom w:type="dxa" w:w="0"></w:bottom><w:right w:type="dxa" w:w="0"></w:right></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="2268"></w:gridCol></w:tblGrid><w:tr><w:trPr><w:trHeight w:hRule="exact" w:val="2268"></w:trHeight></w:trPr><w:tc><w:tcPr><w:tcW w:type="dxa" w:w="2268"></w:tcW><w:tcBorders><w:top w:color="94a3b8" w:space="0" w:sz="4" w:val="single"></w:top><w:left w:color="94a3b8" w:space="0" w:sz="4" w:val="single"></w:left><w:bottom w:color="94a3b8" w:space="0" w:sz="4" w:val="single"></w:bottom><w:right w:color="94a3b8" w:space="0" w:sz="4" w:val="single"></w:right></w:tcBorders><w:tcMar><w:top w:type="dxa" w:w="10"></w:top><w:left w:type="dxa" w:w="0"></w:left><w:bottom w:type="dxa" w:w="0"></w:bottom><w:right w:type="dxa" w:w="0"></w:right></w:tcMar></w:tcPr><w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto"></w:spacing></w:pPr><w:r><w:drawing>
     <wp:inline distB="0" distL="0" distR="0" distT="0">
-        <wp:extent cx="1440000" cy="720000"></wp:extent>
+        <wp:extent cx="1440000" cy="1440000"></wp:extent>
         <wp:effectExtent b="0" l="0" r="0" t="0"></wp:effectExtent>
         <wp:docPr descr="image" id="2" name="Image"></wp:docPr>
         <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"></a:graphicFrameLocks></wp:cNvGraphicFramePr>
@@ -41,7 +41,7 @@
                         <a:stretch><a:fillRect></a:fillRect></a:stretch>
                     </pic:blipFill>
                     <pic:spPr>
-                        <a:xfrm><a:off x="0" y="0"></a:off><a:ext cx="1440000" cy="720000"></a:ext></a:xfrm>
+                        <a:xfrm><a:off x="0" y="0"></a:off><a:ext cx="1440000" cy="1440000"></a:ext></a:xfrm>
                         <a:prstGeom prst="rect"><a:avLst></a:avLst></a:prstGeom>
                     </pic:spPr>
                 </pic:pic>

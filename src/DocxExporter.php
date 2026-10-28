@@ -11,7 +11,7 @@ use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, ListMapper, RowMapper, TableMapper, TextMapper};
+use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, ListMapper, Raster, RowMapper, TableMapper, TextMapper};
 use Papercut\Docx\Package\{DocxPatcher, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, NoteReporter, Output};
@@ -54,7 +54,7 @@ final class DocxExporter implements Exporter
             new RowMapper($fidelity, $boxes),
             new TableMapper($fidelity, $boxes),
             new ListMapper(),
-            new ImageMapper($fidelity, DefaultBackend::make(false)),
+            new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect()),
         );
         (new TreeWalker($styles))->walk($doc, $visitor);
         $first = $visitor->pages()[0] ?? throw new \LogicException('A document needs a page');

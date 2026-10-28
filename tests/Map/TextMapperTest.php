@@ -95,20 +95,16 @@ final class TextMapperTest extends TestCase
         self::assertInstanceOf(LineBreak::class, $p->children[1]);
         $marked = $p->children[2];
         self::assertInstanceOf(Run::class, $marked);
-        self::assertSame('ffff00', $marked->style->backgroundColor);
-        // php-docx writes no run shading, only Word's named highlights
-        self::assertSame('yellow', $marked->style->highlight);
-        self::assertSame(['Approximated span background @ page > body > text[0]'], self::reports($this->fidelity));
+        self::assertSame([], self::reports($this->fidelity));
     }
 
-    public function test_highlight_follows_the_background_hue(): void
+    public function test_span_backgrounds_are_shaded_in_their_own_colour(): void
     {
-        $hl = static fn (string $c): ?string => TextMapper::highlight(Color::parse($c));
-        self::assertSame('yellow', $hl('#fef08a'));
-        self::assertSame('green', $hl('#bbf7d0'));
-        self::assertSame('cyan', $hl('#bfdbfe'));
-        self::assertSame('magenta', $hl('#fecaca'));
-        self::assertSame('lightGray', $hl('#e2e8f0'));
+        $d = self::export(Text::spans(new Span('plain'), new Span('marked', Style::make(background: Color::hex('#fef08a')))));
+        self::assertSame(['fef08a'], $d->values('//w:r/w:rPr/w:shd/@w:fill'));
+        self::assertSame('clear', $d->value('//w:r/w:rPr/w:shd/@w:val'));
+        self::assertSame(0, $d->count('//w:highlight'));
+        self::assertSame([], self::exportedReports());
     }
 
     public function test_block_href_wraps_runs_without_their_own(): void

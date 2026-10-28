@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Tests;
 
-use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, QrCode, Row, Span, Spacer, Svg, Text, View};
+use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, Row, Span, Spacer, Text, View};
 use Papercut\Docx\Tests\Support\Styles;
 use Papercut\Exception\UnsupportedFeature;
 use Papercut\Export\FidelityLevel;
-use Papercut\Style\{ImageFit, Style};
+use Papercut\Style\Style;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Papercut\pt;
 
 /** One row per approximated (≈) or dropped (✗) DOCX row of the spec's capability table, plus this package's own. */
 final class FidelityTableTest extends TestCase
 {
     use Styles;
 
-    private const string PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
     private static function pdf(): string
     {
@@ -40,14 +39,9 @@ final class FidelityTableTest extends TestCase
         yield 'flexible spacer' => [static fn () => Column::make('a', Spacer::flex(), 'b'), FidelityLevel::Approximated, 'flexible spacer', "$body > column[0] > spacer[1]"];
         yield 'fixed height' => [static fn () => Column::make('a')->padding(pt(2))->height(pt(30)), FidelityLevel::Approximated, 'fixed height', "$body > column[0]"];
         yield 'radius' => [static fn () => Column::make('a')->padding(pt(2))->radius(pt(3)), FidelityLevel::Dropped, 'radius', "$body > column[0]"];
-        yield 'opacity' => [static fn () => Text::make('a')->opacity(0.5), FidelityLevel::Dropped, 'opacity', "$body > text[0]"];
         yield 'font weight' => [static fn () => Text::make('a')->weight(500), FidelityLevel::Approximated, 'font weight 500', "$body > text[0]"];
-        yield 'span background' => [static fn () => Text::spans(new Span('a', Style::make(background: \Papercut\Value\Color::named('yellow-200')))), FidelityLevel::Approximated, 'span background', "$body > text[0]"];
         yield 'block link' => [static fn () => Link::to('https://x.test', Text::make('a')), FidelityLevel::Approximated, 'block link', "$body > link[0]"];
-        yield 'image cover' => [static fn () => Image::bytes((string) base64_decode(self::PNG, true))->width(pt(20))->height(pt(20))->fit(ImageFit::Cover), FidelityLevel::Approximated, 'image cover', "$body > image[0]"];
         yield 'pdf page' => [static fn () => Column::make(PdfPage::bytes(self::pdf())), FidelityLevel::Dropped, 'pdf-page', "$body > column[0] > pdf-page[0]"];
-        yield 'qr code' => [static fn () => Column::make(QrCode::make('x')->width(mm(20))), FidelityLevel::Dropped, 'qr-code', "$body > column[0] > qr-code[0]"];
-        yield 'svg' => [static fn () => Column::make(Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>')), FidelityLevel::Dropped, 'svg', "$body > column[0] > svg[0]"];
     }
 
     /** @param \Closure(): (Document|Page|Text|View|Image|Link) $build */

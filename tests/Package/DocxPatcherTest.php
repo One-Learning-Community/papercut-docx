@@ -53,4 +53,23 @@ final class DocxPatcherTest extends TestCase
         $this->expectExceptionMessage('php-docx output changed: ');
         DocxPatcher::patch($broken, new PatchSpec(11906, 16838, 'Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
     }
+
+    public function test_a_shading_marker_left_unpatched_fails_loudly(): void
+    {
+        $bytes = Document::make(Page::a4()->body(Text::make('x')))->export(new \Papercut\Docx\DocxExporter())->bytes();
+        $zip = new \ZipArchive();
+        $file = (string) tempnam(sys_get_temp_dir(), 'docx');
+        file_put_contents($file, $bytes);
+        $zip->open($file);
+        $doc = (string) $zip->getFromName('word/document.xml');
+        // as if php-docx wrote the highlight another way
+        $zip->addFromString('word/document.xml', str_replace('<w:t', '<w:rPr><w:highlight w:val="' . DocxPatcher::shading('ffff00') . '"></w:highlight></w:rPr><w:t', $doc));
+        $zip->close();
+        $changed = (string) file_get_contents($file);
+        unlink($file);
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('php-docx output changed: run highlight in word/document.xml not found');
+        DocxPatcher::patch($changed, new PatchSpec(11906, 16838, 'Inter', 20, null, new \DateTimeImmutable('2000-01-01')));
+    }
 }
