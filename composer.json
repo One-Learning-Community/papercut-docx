@@ -6,7 +6,8 @@
     "homepage": "https://github.com/One-Learning-Community/papercut",
     "support": {
         "issues": "https://github.com/One-Learning-Community/papercut/issues",
-        "source": "https://github.com/One-Learning-Community/papercut"
+        "source": "https://github.com/One-Learning-Community/papercut",
+        "docs": "https://one-learning-community.github.io/papercut/guide/word-export.html"
     },
     "authors": [
         {
