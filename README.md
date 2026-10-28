@@ -8,6 +8,9 @@
 Word (.docx) export for [Papercut](../../README.md) documents: the same document you render as a PDF, as a file
 people can open and edit in Word, LibreOffice or Google Docs.
 
+The Word file is written by [`dskripchenko/php-docx`](https://github.com/dskripchenko/php-docx), by Denis Skripchenko. Papercut maps its layout onto
+Word's paragraphs and tables; php-docx writes the file. Thank you.
+
 **Documentation:** [Word export](https://one-learning-community.github.io/papercut/guide/word-export.html)
 
 > **Status: experimental, pre-release. Not yet published to Packagist.** Word, LibreOffice and Google Docs lay out
