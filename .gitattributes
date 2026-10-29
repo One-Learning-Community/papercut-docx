@@ -1,0 +1,5 @@
+# Kept out of the Composer download (the dist archive): development files only.
+/.gitattributes export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml.dist export-ignore
+/tests export-ignore
