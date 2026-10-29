@@ -7,9 +7,9 @@ namespace Papercut\Docx\Walk;
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, HorizontalAnchor, ImagePosition, ParagraphStyle, VerticalAnchor};
 use Papercut\{Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, View};
-use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, ListMapper, RowMapper, TableMapper, TextMapper, Units};
+use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, Units};
 use Papercut\Export\Fidelity;
-use Papercut\Layout\WidthResolver;
+use Papercut\Layout\{TableGrid, WidthResolver};
 use Papercut\Style\{Align, ComputedStyle, Direction, Justify, TextAlign};
 use Papercut\Tree\{Region, TreeVisitor, Visit};
 use Papercut\Value\{Auto, Edges, Length, Percent};
@@ -50,6 +50,7 @@ final class DocxVisitor implements TreeVisitor
         private readonly TextMapper $text,
         private readonly BoxMapper $boxes,
         private readonly RowMapper $rows,
+        private readonly InlineRow $inline,
         private readonly TableMapper $tables,
         private readonly ListMapper $lists,
         private readonly ImageMapper $images,
@@ -95,12 +96,12 @@ final class DocxVisitor implements TreeVisitor
 
             return;
         }
-        $blocks = Flow::blocks($root);
+        $blocks = Flow::blocks($root, $this->lists->settled());
         // Word pushes the body below the header's full extent, spacing included, so the gap rides on the header.
-        if ($blocks !== [] && $region === Region::Header) {
-            $blocks = Flow::spaceAfter($blocks, $this->page?->headerGapLength()->points ?? 0.0);
-        } elseif ($blocks !== [] && $region === Region::Footer) {
-            $blocks = Flow::spaceBefore($blocks, $this->page?->footerGapLength()->points ?? 0.0);
+        if ($blocks !== [] && $region->isHeader()) {
+            $blocks = Flow::spaceAfter($blocks, $this->page?->headerGapLength()->points ?? 0.0, $this->lists->settled());
+        } elseif ($blocks !== [] && $region->isFooter()) {
+            $blocks = Flow::spaceBefore($blocks, $this->page?->footerGapLength()->points ?? 0.0, $this->lists->settled());
         }
         $this->regions[$region->value] = $blocks;
     }
@@ -121,6 +122,15 @@ final class DocxVisitor implements TreeVisitor
         $isRow = $node instanceof View && $style->direction === Direction::Row;
         $frame = new Frame($node, $style, $width, $content, $isRow);
         $frame->backdrop = Fade::under($style->background, $parent->backdrop);
+        // Word draws these as table cells, whose lists start again at level 0: a table cell, a row's child, a decorated box
+        // (which leave() wraps in a table). Entered before the node's own list opens, so a decorated list's items restart too.
+        if ($node instanceof TableCell && $parent->node instanceof TableRow) {
+            $this->lists->enterCell();
+        } elseif ($parent->isRow || (!$node instanceof ListItem && !$isRow && !$node instanceof Table
+            && TextMapper::glyph($node, $style) === null && BoxMapper::decorated($style))) {
+            $frame->boxCell = true;
+            $this->lists->enterCell();
+        }
         if ($node instanceof View && $isRow) {
             $frame->lines = $this->widths->flexLines($node, $style, $width);
             foreach ($frame->lines as $line) {
@@ -129,11 +139,13 @@ final class DocxVisitor implements TreeVisitor
                 }
             }
         } elseif ($node instanceof Table) {
+            $frame->grid = TableGrid::of($node);
             $frame->columns = TableMapper::settle($this->widths->tableColumns($node, $style, $width), WidthResolver::tracks($node));
         } elseif ($node instanceof TableRow) {
+            $frame->rowIndex = $parent->rowsSeen++;
             $frame->header = $at->inHeader() && $at->parent() instanceof Table && $at->parent()->repeatsHeader();
         } elseif ($node instanceof ListNode) {
-            $this->lists->enter($node);
+            $this->lists->enter($node, $at->path());
         } elseif ($node instanceof Link) {
             $this->links[] = TextMapper::href($node->uri());
             $this->fidelity->approximated('block link', $at->path());
@@ -157,14 +169,18 @@ final class DocxVisitor implements TreeVisitor
         \assert($frame instanceof Frame);
         $style = $frame->style ?? $style;
         $parent = $this->top();
+        if ($frame->boxCell && !$node instanceof ListNode) {
+            $this->lists->leaveCell();
+        }
 
         if ($node instanceof TableCell && $parent->node instanceof TableRow) {
-            $parent->cells[] = $this->tables->cell($node, $style, $frame, $parent, Flow::blocks($frame), $at->path());
+            $this->lists->leaveCell();
+            $parent->cells[] = $this->tables->cell($node, $style, $frame, $parent, $this->stack[count($this->stack) - 2] ?? null, Flow::blocks($frame, $this->lists->settled()), $at->path());
 
             return;
         }
         if ($node instanceof TableRow && $parent->node instanceof Table) {
-            $parent->rows[] = $this->tables->row($frame);
+            $parent->rows[] = $this->tables->row($frame, $parent);
 
             return;
         }
@@ -181,11 +197,11 @@ final class DocxVisitor implements TreeVisitor
             $node instanceof Svg => $this->images->svg($node, $style, $frame, $at->path()),
             $node instanceof PdfPage, $node instanceof Place => $this->drop($node, $at),
             $node instanceof ListNode => $this->leaveList($frame),
-            $node instanceof ListItem => $this->lists->item(Flow::blocks($frame)),
+            $node instanceof ListItem => $this->lists->item(Flow::blocks($frame, $this->lists->settled()), $at->path()),
             $node instanceof Link => $this->leaveLink($frame),
             $node instanceof Table => [$this->tables->table($style, $frame)],
-            $frame->isRow => [$this->rows->row($style, $frame, $at->path())],
-            default => Flow::blocks($frame),
+            $frame->isRow => [$this->inline->line($style, $frame, $at->path()) ?? $this->rows->row($style, $frame, $at->path())],
+            default => Flow::blocks($frame, $this->lists->settled()),
         };
         // A column centres or end-aligns a child that doesn't stretch; for a paragraph that is its alignment.
         $cross = $parent->isRow ? Align::Stretch : ($style->alignSelf ?? $parent->style->alignItems ?? Align::Stretch);
@@ -200,12 +216,15 @@ final class DocxVisitor implements TreeVisitor
                 ? new Paragraph([$b], new ParagraphStyle(alignment: $crossJc ?? Alignment::Start, lineSpacingTwips: 240, lineSpacingRule: 'auto'))
                 : $b, $blocks);
         } elseif ($node instanceof Text && $crossJc !== null && $style->textAlign === TextAlign::Left) {
-            $blocks = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? Flow::withParagraph($b, ['alignment' => $crossJc]) : $b, $blocks);
+            $blocks = array_map(fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? Flow::withParagraph($b, ['alignment' => $crossJc], $this->lists->settled()) : $b, $blocks);
         }
 
         // A child of a row becomes a cell, which carries its box itself; elsewhere a decorated box is wrapped.
         $boxed = false;
-        if ($glyph !== null) {
+        if ($node instanceof View && $node->styleName() === 'markup.hr' && !$parent->isRow && $frame->items === [] && BoxMapper::isRule($style)) {
+            $blocks = [BoxMapper::rule($style)];
+            $style = BoxMapper::undecorated($style);
+        } elseif ($glyph !== null) {
             $style = BoxMapper::undecorated($style);
         } elseif (!$parent->isRow && !$frame->isRow && !$node instanceof Table && BoxMapper::decorated($style)) {
             $align = match ($style->alignSelf ?? $parent->style->alignItems ?? Align::Stretch) {
@@ -242,11 +261,14 @@ final class DocxVisitor implements TreeVisitor
             $table = $this->stack[count($this->stack) - 2] ?? null;
             $cols = $table instanceof Frame ? $table->columns : [];
 
-            return array_sum(array_slice($cols, $parent->column, $node->span()));
+            $placed = $table instanceof Frame ? TableMapper::placement($table, $parent) : null;
+
+            return array_sum(array_slice($cols, $placed->col ?? $parent->column, $placed->colspan ?? $node->span()));
         }
         if ($node instanceof TableRow) {
             return $parent->content;
         }
+        // An item sits one list indent in from its list; what it holds is laid out in the width that's left.
         $avail = max(0.0, $parent->content - $style->margin->horizontal());
         $w = match (true) {
             $style->width instanceof Length => $style->width->points,
@@ -263,7 +285,8 @@ final class DocxVisitor implements TreeVisitor
             $w = min($w, $this->intrinsic($node, $parent->style, $avail));
         }
 
-        return min($w, $avail);
+        // An item's content sits one list indent in from the item's own box, as in the PDF.
+        return $node instanceof ListItem ? max(0.0, min($w, $avail) - ListMapper::INDENT / 20) : min($w, $avail);
     }
 
     /**
@@ -299,8 +322,11 @@ final class DocxVisitor implements TreeVisitor
     private function leaveList(Frame $frame): array
     {
         $this->lists->leave();
+        if ($frame->boxCell) {
+            $this->lists->leaveCell();
+        }
 
-        return Flow::blocks($frame);
+        return Flow::blocks($frame, $this->lists->settled());
     }
 
     /** @return list<BlockElement> */
@@ -308,7 +334,7 @@ final class DocxVisitor implements TreeVisitor
     {
         array_pop($this->links);
 
-        return Flow::blocks($frame);
+        return Flow::blocks($frame, $this->lists->settled());
     }
 
     /** @return list<BlockElement> */

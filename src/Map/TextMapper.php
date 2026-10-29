@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Map;
 
-use Dskripchenko\PhpDocx\Element\{Field, Hyperlink, InlineElement, LineBreak, Paragraph, Run};
+use Dskripchenko\PhpDocx\Element\{Field, Hyperlink, InlineElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle, RunStyle};
 use Papercut\{Node, PageNumber, Text, View};
 use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Exception\InvalidValue;
 use Papercut\Export\Fidelity;
 use Papercut\Paint\Link;
-use Papercut\Style\{ComputedStyle, TextAlign};
+use Papercut\Style\{ComputedStyle, TextAlign, Theme, WhiteSpace};
 use Papercut\Tree\Visit;
 use Papercut\Value\{Color, Length};
 
@@ -21,6 +21,8 @@ final class TextMapper
     public function __construct(
         private readonly LineMetrics $metrics,
         private readonly Fidelity $fidelity,
+        private readonly WordFonts $fonts,
+        private readonly ?Theme $theme = null,
     ) {
     }
 
@@ -29,25 +31,23 @@ final class TextMapper
     public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null, ?Color $backdrop = null): Paragraph
     {
         $backdrop ??= Color::white();
-        $children = [];
+        /** @var list<array{Run, ?string, bool}> $runs run, link, whether it is a line break */
+        $runs = [];
         foreach ($t->spanList() as $span) {
-            if ($span->lineBreak) {
-                $children[] = new LineBreak();
-                continue;
-            }
             // A span's own colours fade with the text; inherited ones already have.
-            $cs = $s->child($span->style);
-            $spanBg = Fade::over($span->style->background, $s->opacity, $backdrop);
-            $rs = self::runStyle($span->style->color === null ? $cs : new ComputedStyle(...[...get_object_vars($cs), 'color' => Fade::over($cs->color, $s->opacity, $spanBg ?? $backdrop) ?? $cs->color]));
+            $own = ($this->theme ?? Theme::default())->spanStyle($span);
+            $cs = $s->child($own);
+            $spanBg = Fade::over($own->background, $s->opacity, $backdrop);
+            $rs = $this->runStyle($own->color === null ? $cs : new ComputedStyle(...[...get_object_vars($cs), 'color' => Fade::over($cs->color, $s->opacity, $spanBg ?? $backdrop) ?? $cs->color]));
             $bg = Units::fill($spanBg);
             if ($bg !== null) {
                 // php-docx writes no run shading, but writes a highlight as given: DocxPatcher turns this one into w:shd.
                 $rs = new RunStyle(...[...get_object_vars($rs), 'highlight' => DocxPatcher::shading($bg)]);
             }
-            $run = new Run($span->text, $rs);
-            $href = $span->href ?? $blockHref;
-            $children[] = $href !== null ? self::hyperlink($href, [$run]) : $run;
+            // A line break is a run of its own, so a blank line takes the height of the text around it.
+            $runs[] = [new Run($span->lineBreak ? "\n" : $span->text, $rs), $span->href ?? $blockHref, $span->lineBreak];
         }
+        $children = self::linked($runs);
         if ($s->minLines > 2) {
             // Word's widow control keeps two lines together, never more.
             $this->fidelity->approximated('min-lines ' . $s->minLines, $at->path());
@@ -63,9 +63,58 @@ final class TextMapper
         return new Paragraph($children, $this->paragraphStyle($s), $level);
     }
 
+    /**
+     * Runs in Word order, each with its link. A line break between two runs of one link belongs to that link, and
+     * neighbouring runs of one link share a single hyperlink element.
+     *
+     * @param list<array{Run, ?string, bool}> $runs
+     * @return list<InlineElement>
+     */
+    private static function linked(array $runs): array
+    {
+        $count = count($runs);
+        $hrefs = array_map(static fn (array $r): ?string => $r[1], $runs);
+        for ($i = 0; $i < $count; $i++) {
+            if (!$runs[$i][2] || $hrefs[$i] !== null) {
+                continue;
+            }
+            $end = $i;
+            while ($end + 1 < $count && $runs[$end + 1][2] && $hrefs[$end + 1] === null) {
+                $end++;
+            }
+            if ($i > 0 && $end + 1 < $count && $hrefs[$i - 1] === $hrefs[$end + 1]) {
+                for ($k = $i; $k <= $end; $k++) {
+                    $hrefs[$k] = $hrefs[$i - 1];
+                }
+            }
+            $i = $end;
+        }
+        /** @var list<array{?string, list<Run>}> $groups */
+        $groups = [];
+        foreach ($runs as $i => [$run]) {
+            $href = $hrefs[$i];
+            $last = count($groups) - 1;
+            if ($last >= 0 && $groups[$last][0] === $href) {
+                $groups[$last][1][] = $run;
+            } else {
+                $groups[] = [$href, [$run]];
+            }
+        }
+        $children = [];
+        foreach ($groups as [$href, $members]) {
+            if ($href === null) {
+                array_push($children, ...$members);
+            } else {
+                $children[] = self::hyperlink($href, $members);
+            }
+        }
+
+        return $children;
+    }
+
     public function pageNumber(PageNumber $n, ComputedStyle $s): Paragraph
     {
-        $rs = self::runStyle($s);
+        $rs = $this->runStyle($s);
         $children = [];
         foreach (preg_split('/(\{page\}|\{total\})/', $n->format(), -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?: [] as $part) {
             $children[] = match ($part) {
@@ -78,12 +127,12 @@ final class TextMapper
         return new Paragraph($children, $this->paragraphStyle($s));
     }
 
-    public static function runStyle(ComputedStyle $s): RunStyle
+    public function runStyle(ComputedStyle $s): RunStyle
     {
         return new RunStyle(
             sizeHalfPoints: (int) round($s->fontSize * 2),
             color: Units::hex($s->color),
-            fontFamily: $s->fontFamily,
+            fontFamily: $this->fonts->name($s->fontFamily),
             bold: $s->fontWeight >= 600,
             italic: $s->italic,
             underline: $s->underline,
@@ -99,7 +148,7 @@ final class TextMapper
                 TextAlign::Left => Alignment::Start,
                 TextAlign::Right => Alignment::End,
                 TextAlign::Center => Alignment::Center,
-                TextAlign::Justify => Alignment::Justify,
+                TextAlign::Justify => $s->whiteSpace === WhiteSpace::PreWrap ? Alignment::Start : Alignment::Justify,
             },
             // A multiple, never exact: Google Docs turns an exact height into a multiple of its default font's line.
             lineSpacingTwips: (int) round(240 * $s->lineHeight / $this->metrics->natural($s->fontFamily)),

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Map;
 
-use Dskripchenko\PhpDocx\Element\{BlockElement, Paragraph, Table, TableCell, TableRow};
-use Dskripchenko\PhpDocx\Style\{Alignment, Border, BorderSet, BorderStyle as DocxBorderStyle, CellStyle, RowHeightRule, TableStyle, VerticalAlign};
+use Dskripchenko\PhpDocx\Element\{BlockElement, Paragraph, Run, Table, TableCell, TableRow};
+use Dskripchenko\PhpDocx\Style\{Alignment, Border, BorderSet, BorderStyle as DocxBorderStyle, CellStyle, ParagraphStyle, RowHeightRule, RunStyle, TableStyle, VerticalAlign};
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
 use Papercut\Style\{BorderStyle, ComputedStyle};
@@ -23,6 +23,29 @@ final class BoxMapper
         return $s->padding->horizontal() + $s->padding->vertical() > 0.0
             || $s->borderWidth->horizontal() + $s->borderWidth->vertical() > 0.0
             || Units::fill($s->background) !== null;
+    }
+
+    /**
+     * Whether an empty box is a rule: a bottom border and nothing else of a box. Word draws it as a paragraph border.
+     * Anything else empty keeps its table.
+     */
+    public static function isRule(ComputedStyle $s): bool
+    {
+        return $s->borderWidth->bottom->points > 0.0
+            && $s->borderWidth->top->points + $s->borderWidth->left->points + $s->borderWidth->right->points <= 0.0
+            && $s->padding->horizontal() + $s->padding->vertical() <= 0.0
+            && Units::fill($s->background) === null
+            && $s->radius <= 0.0
+            && !($s->height instanceof Length);
+    }
+
+    /** An empty paragraph, a hairline high, with the style's bottom border. */
+    public static function rule(ComputedStyle $s): Paragraph
+    {
+        return new Paragraph(
+            [new Run('', new RunStyle(sizeHalfPoints: 2))],
+            new ParagraphStyle(lineSpacingTwips: 2, lineSpacingRule: 'exact', borders: self::borders($s)),
+        );
     }
 
     /** The style without its box, for a node whose box is drawn some other way (a glyph marker). */
@@ -115,7 +138,7 @@ final class BoxMapper
     }
 
     /** @param array{float, float, float, float} $extraPad top, right, bottom, left in pt */
-    public function cellStyle(ComputedStyle $s, int $widthTwips, int $span = 1, VerticalAlign $v = VerticalAlign::Top, ?ComputedStyle $row = null, array $extraPad = [0.0, 0.0, 0.0, 0.0]): CellStyle
+    public function cellStyle(ComputedStyle $s, int $widthTwips, int $span = 1, VerticalAlign $v = VerticalAlign::Top, ?ComputedStyle $row = null, array $extraPad = [0.0, 0.0, 0.0, 0.0], int $rowSpan = 1, bool $continue = false): CellStyle
     {
         return new CellStyle(
             widthTwips: $widthTwips,
@@ -127,6 +150,8 @@ final class BoxMapper
             backgroundColor: Units::fill($s->background) ?? ($row === null ? null : Units::fill($row->background)),
             borders: self::borders($s) ?? ($row === null ? null : self::borders($row)),
             gridSpan: $span,
+            rowSpan: $rowSpan,
+            vMergeContinue: $continue,
         );
     }
 

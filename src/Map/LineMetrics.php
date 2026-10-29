@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Map;
 
-use Papercut\Text\FontSet;
+use Papercut\Text\{FontSet, TrueTypeTables};
 
 /**
  * A font's natural line height as a share of its size (hhea ascender - descender + lineGap over
@@ -41,33 +41,16 @@ final class LineMetrics
 
     private static function read(string $path): ?float
     {
-        $data = @file_get_contents($path);
-        if ($data === false) {
+        $tables = TrueTypeTables::open($path);
+        $head = $tables?->table('head');
+        $hhea = $tables?->table('hhea');
+        if ($head === null || $hhea === null || strlen($head) < 20 || strlen($hhea) < 10) {
             return null;
         }
-        $at = static function (string $format, int $offset, int $size) use ($data): ?array {
-            if ($offset < 0 || $offset + $size > strlen($data)) {
-                return null;
-            }
-            $v = unpack($format, $data, $offset);
-
-            return $v === false ? null : $v;
-        };
-        $count = $at('n', 4, 2)[1] ?? 0;
-        $tables = [];
-        for ($i = 0; $i < $count; $i++) {
-            $rec = $at('a4tag/Nsum/Noffset/Nlength', 12 + 16 * $i, 16);
-            if ($rec === null) {
-                return null;
-            }
-            $tables[(string) $rec['tag']] = (int) $rec['offset'];
-        }
-        if (!isset($tables['head'], $tables['hhea'])) {
-            return null;
-        }
-        $upm = (int) ($at('n', $tables['head'] + 18, 2)[1] ?? 0);
-        $h = $at('nasc/ndesc/ngap', $tables['hhea'] + 4, 6);
-        if ($upm <= 0 || $h === null) {
+        $u = unpack('n', $head, 18);
+        $upm = $u === false ? 0 : (int) $u[1];
+        $h = unpack('nasc/ndesc/ngap', $hhea, 4);
+        if ($upm <= 0 || $h === false) {
             return null;
         }
         $signed = static fn (int $v): int => $v >= 0x8000 ? $v - 0x10000 : $v;

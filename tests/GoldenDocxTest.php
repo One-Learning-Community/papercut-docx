@@ -36,7 +36,7 @@ final class GoldenDocxTest extends TestCase
             array_map('unlink', glob("$dir/*") ?: []);
             @mkdir($dir, 0o777, true);
         }
-        $parts = array_values(array_filter($docx->names(), static fn (string $n): bool => preg_match('~^(\[Content_Types\]\.xml|_rels/.+|word/(document|styles|header\d+|footer\d+)\.xml|word/_rels/.+)$~', $n) === 1));
+        $parts = array_values(array_filter($docx->names(), static fn (string $n): bool => preg_match('~^(\[Content_Types\]\.xml|_rels/.+|word/(document|styles|numbering|fontTable|header\d+|footer\d+)\.xml|word/_rels/.+)$~', $n) === 1));
         sort($parts);
         $golden = [];
         foreach ($parts as $part) {

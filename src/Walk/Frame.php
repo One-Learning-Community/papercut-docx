@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Papercut\Docx\Walk;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, TableCell, TableRow};
-use Papercut\Layout\FlexSlot;
+use Papercut\Layout\{FlexSlot, TableGrid};
 use Papercut\Node;
 use Papercut\Style\ComputedStyle;
 use Papercut\Value\Color;
@@ -25,10 +25,22 @@ final class Frame
     public array $slots = [];
     /** @var list<float> column widths in pt (Table frames) */
     public array $columns = [];
+    /** The table's cells on its grid (Table frames). */
+    public ?TableGrid $grid = null;
+    /** @var array<string, \Dskripchenko\PhpDocx\Style\CellStyle> spanning cells' styles by "row:col" (Table frames) */
+    public array $spanStyles = [];
+    /** Rows entered so far, header rows first (Table frames). */
+    public int $rowsSeen = 0;
+    /** This row's index among all the table's rows (TableRow frames). */
+    public int $rowIndex = 0;
+    /** Cells of this row placed so far (TableRow frames). */
+    public int $placed = 0;
     /** Next grid column (TableRow frames). */
     public int $column = 0;
     /** Whether this table row is a header row. */
     public bool $header = false;
+    /** Whether this node's decorated box is a Word table: lists inside it start again at level 0. */
+    public bool $boxCell = false;
     /** What a faded child lies on: the nearest fill, else white. */
     public Color $backdrop;
 

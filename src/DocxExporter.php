@@ -12,8 +12,8 @@ use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, ListMapper, Raster, RowMapper, TableMapper, TextMapper};
-use Papercut\Docx\Package\{DocxPatcher, PageSetupMapper, PatchSpec};
+use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, WordFonts};
+use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, NoteReporter, Output};
 use Papercut\Layout\WidthResolver;
@@ -37,21 +37,49 @@ final class DocxExporter implements Exporter
 
         $pages = $doc->pages();
         foreach ($pages as $i => $page) {
-            $name = count($pages) > 1 ? sprintf('page[%d]', $i) : 'page';
             if ($page->templatePage() !== null) {
-                $fidelity->dropped('PDF page template', $name);
+                $fidelity->dropped('PDF page template', self::pagePath($i, count($pages)));
             }
         }
 
+        $mirror = false;
+        foreach ($pages as $page) {
+            $mirror = $mirror || $page->mirrorsMargins();
+        }
+        if ($mirror) {
+            foreach ($pages as $i => $page) {
+                $differ = abs($page->margins()->left->points - $page->margins()->right->points) > 0.01;
+                if (!$page->mirrorsMargins() && $differ) {
+                    $fidelity->approximated('mirrored margins', self::pagePath($i, count($pages)));
+                }
+            }
+        }
+
+        // Word paginates itself, so a later run's unset first part copies the normal one even where the PDF would use the even one.
+        foreach ($pages as $i => $page) {
+            $fh = $page->firstHeaderNodes() !== null;
+            $ff = $page->firstFooterNodes() !== null;
+            if ($i > 0 && (($fh && !$ff && $page->evenFooterNodes() !== null) || ($ff && !$fh && $page->evenHeaderNodes() !== null))) {
+                $fidelity->approximated('first page of a later run on an even page', sprintf('page[%d]', $i));
+            }
+        }
+
+        $numbering = new Numbering();
         $boxes = new BoxMapper($fidelity);
+        $root = $styles->root();
+        $fonts = new WordFonts($options->fonts());
+        $fonts->name($root->fontFamily);
+        $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $options->theme());
+        $widths = WidthResolver::for($options);
         $visitor = new DocxVisitor(
             $fidelity,
-            WidthResolver::for($options),
-            new TextMapper(new LineMetrics($options->fonts()), $fidelity),
+            $widths,
+            $text,
             $boxes,
             new RowMapper($fidelity, $boxes),
+            new InlineRow($fidelity, $text, $widths),
             new TableMapper($fidelity, $boxes),
-            new ListMapper(),
+            new ListMapper($numbering, $fidelity),
             new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect()),
         );
         (new TreeWalker($styles))->walk($doc, $visitor);
@@ -75,13 +103,18 @@ final class DocxExporter implements Exporter
             $registry->heading($level, new RunStyle(), new ParagraphStyle());
         }
 
-        $root = $styles->root();
         $bytes = DocxPatcher::patch(
             (new Word2007Writer($registry))->write($docx),
-            new PatchSpec($root->fontFamily, (int) round($root->fontSize * 2), $meta->lang, $date),
+            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written()),
         );
 
         return new Output($bytes, self::MIME, 'docx');
+    }
+
+    /** The path fidelity reports use for a page: indexed only when the document has several. */
+    private static function pagePath(int $index, int $count): string
+    {
+        return $count > 1 ? sprintf('page[%d]', $index) : 'page';
     }
 
     /**
@@ -94,7 +127,7 @@ final class DocxExporter implements Exporter
         $groups = [];
         foreach ($visitor->pages() as $p) {
             $last = array_key_last($groups);
-            if ($last !== null && self::alike($groups[$last][0], $p)) {
+            if ($last !== null && !self::setsFirst($p['page']) && self::alike($groups[$last][0], $p)) {
                 $groups[$last][] = $p;
             } else {
                 $groups[] = [$p];
@@ -102,6 +135,11 @@ final class DocxExporter implements Exporter
         }
         if ($groups === []) {
             throw new \LogicException('A document needs a page');
+        }
+
+        $anyEven = false;
+        foreach ($visitor->pages() as $p) {
+            $anyEven = $anyEven || $p['page']->evenHeaderNodes() !== null || $p['page']->evenFooterNodes() !== null;
         }
 
         $sections = [];
@@ -118,12 +156,12 @@ final class DocxExporter implements Exporter
             if ($body === [] || !end($body) instanceof Paragraph) {
                 $body[] = Flow::hairline();
             }
-            $header = $pages[0]['regions']['header'] ?? [];
-            if ($pages[0]['floats'] !== []) {
-                // Pictures placed on the page from the header repeat on every page of the section, as layers do.
-                $header = [new Paragraph($pages[0]['floats'], Flow::hairline()->style), ...$header];
-            }
-            $footer = $pages[0]['regions']['footer'] ?? [];
+            $first = $pages[0];
+            $floats = $first['floats'];
+            $normalHeader = $first['regions']['header'] ?? [];
+            $normalFooter = $first['regions']['footer'] ?? [];
+            $header = self::withFloats($normalHeader, $floats);
+            $footer = $normalFooter;
             // A section without a header or footer shows the previous section's in Word; an empty one stops that.
             $previous = $sections[$g - 1] ?? null;
             if ($previous !== null && $header === [] && $previous->header !== []) {
@@ -132,7 +170,18 @@ final class DocxExporter implements Exporter
             if ($previous !== null && $footer === [] && $previous->footer !== []) {
                 $footer = [Flow::hairline()];
             }
-            $sections[] = new Section($body, $header, $footer, PageSetupMapper::setup($pages[0]['page']));
+            // A variant that is set gives its blocks, or a hairline when set empty, except that a header part with floats needs none. An unset one copies the normal part.
+            [$fh, $ff, $eh, $ef] = [[], [], [], []];
+            $page = $first['page'];
+            if (self::setsFirst($page)) {
+                $fh = self::variant($page->firstHeaderNodes() !== null, $first, 'first-header', $normalHeader, true, $floats);
+                $ff = self::variant($page->firstFooterNodes() !== null, $first, 'first-footer', $normalFooter, false, $floats);
+            }
+            if ($anyEven) {
+                $eh = self::variant($page->evenHeaderNodes() !== null, $first, 'even-header', $normalHeader, true, $floats);
+                $ef = self::variant($page->evenFooterNodes() !== null, $first, 'even-footer', $normalFooter, false, $floats);
+            }
+            $sections[] = new Section($body, $header, $footer, PageSetupMapper::setup($page), $fh, $ff, $eh, $ef);
         }
 
         return $sections;
@@ -150,7 +199,64 @@ final class DocxExporter implements Exporter
             && $pa->margins() == $pb->margins()
             && ($a['regions']['header'] ?? []) == ($b['regions']['header'] ?? [])
             && ($a['regions']['footer'] ?? []) == ($b['regions']['footer'] ?? [])
+            && $pa->mirrorsMargins() === $pb->mirrorsMargins()
+            && self::variantsAlike($a, $b)
             && $a['floats'] == $b['floats'];
+    }
+
+    private static function setsFirst(Page $page): bool
+    {
+        return $page->firstHeaderNodes() !== null || $page->firstFooterNodes() !== null;
+    }
+
+    /**
+     * Pictures placed on the page from the header repeat on every page of the section, as layers do.
+     *
+     * @param list<BlockElement> $part
+     * @param list<DocxImage> $floats
+     * @return list<BlockElement>
+     */
+    private static function withFloats(array $part, array $floats): array
+    {
+        return $floats === [] ? $part : [new Paragraph($floats, Flow::hairline()->style), ...$part];
+    }
+
+    /**
+     * A first or even part: the variant's blocks if it is set, with a hairline when it is set empty, except that a header part with floats needs none. An unset variant copies the normal part.
+     *
+     * @param array{page: Page, regions: array<string, list<BlockElement>>, floats: list<DocxImage>} $run
+     * @param list<BlockElement> $normal
+     * @param list<DocxImage> $floats
+     * @return list<BlockElement>
+     */
+    private static function variant(bool $set, array $run, string $region, array $normal, bool $head, array $floats): array
+    {
+        // A set variant that maps to no blocks falls back like a set-empty one. A header with floats needs no hairline: the floats paragraph is its content.
+        $blocks = $set ? ($run['regions'][$region] ?? []) : $normal;
+        if ($blocks === [] && (!$head || $floats === [])) {
+            $blocks = [Flow::hairline()];
+        }
+
+        return $head ? self::withFloats($blocks, $floats) : $blocks;
+    }
+
+    /**
+     * @param array{page: Page, regions: array<string, list<BlockElement>>, floats: list<DocxImage>} $a
+     * @param array{page: Page, regions: array<string, list<BlockElement>>, floats: list<DocxImage>} $b
+     */
+    private static function variantsAlike(array $a, array $b): bool
+    {
+        foreach (['first-header', 'first-footer', 'even-header', 'even-footer'] as $region) {
+            if (($a['regions'][$region] ?? []) != ($b['regions'][$region] ?? [])) {
+                return false;
+            }
+        }
+        [$pa, $pb] = [$a['page'], $b['page']];
+
+        return ($pa->firstHeaderNodes() === null) === ($pb->firstHeaderNodes() === null)
+            && ($pa->firstFooterNodes() === null) === ($pb->firstFooterNodes() === null)
+            && ($pa->evenHeaderNodes() === null) === ($pb->evenHeaderNodes() === null)
+            && ($pa->evenFooterNodes() === null) === ($pb->evenFooterNodes() === null);
     }
 
     /**

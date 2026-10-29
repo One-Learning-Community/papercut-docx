@@ -101,7 +101,7 @@ final class DocxInspector
     public function bodyText(string $part = 'word/document.xml'): string
     {
         $out = '';
-        foreach ($this->xpath($part)->query('//w:t | //w:p | //w:tab') ?: [] as $node) {
+        foreach ($this->xpath($part)->query('//w:t | //w:p | //w:tab | //w:br') ?: [] as $node) {
             if (!$node instanceof \DOMElement) {
                 continue;
             }

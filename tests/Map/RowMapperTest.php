@@ -165,7 +165,7 @@ final class RowMapperTest extends TestCase
     {
         yield 'overflow' => [Row::make(View::make(Text::make('a'))->width(pt(400)), View::make(Text::make('b'))->width(pt(400)))];
         yield 'zero-width spacer' => [Row::make(Text::make('a'), Spacer::size(pt(0)), Text::make('b'))];
-        yield 'gap wider than the row' => [Row::make(Text::make('a'), Text::make('b'))->gap(pt(900))];
+        yield 'gap wider than the row' => [Row::make(Text::make('a')->grow(1), Text::make('b'))->gap(pt(900))];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('awkwardRows')]

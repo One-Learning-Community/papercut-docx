@@ -12,8 +12,11 @@ use Papercut\Style\ComputedStyle;
 /** A column's children as a run of blocks: gap and vertical margins as paragraph spacing, pagination as flags. */
 final class Flow
 {
+    /** A hairline paragraph's exact line height in twips; its space after is the requested space less this. */
+    public const int HAIRLINE = 2;
+
     /** @return list<BlockElement> */
-    public static function blocks(Frame $frame): array
+    public static function blocks(Frame $frame, Settled $settled): array
     {
         $gap = $frame->style->gap ?? 0.0;
         $out = [];
@@ -25,16 +28,16 @@ final class Flow
             $before = $s?->margin->top->points ?? 0.0;
             $after = ($s?->margin->bottom->points ?? 0.0) + ($i < $count - 1 ? $gap : 0.0);
             if ($s !== null) {
-                $blocks = self::pagination($blocks, $s);
+                $blocks = self::pagination($blocks, $s, $settled);
             }
             if ($before > 0.0) {
-                $blocks = self::spaceBefore($blocks, $before);
+                $blocks = self::spaceBefore($blocks, $before, $settled);
             }
             // Two tables back to back merge into one in Word; a hairline paragraph keeps them apart.
             if ($out !== [] && end($out) instanceof Table && $blocks[0] instanceof Table) {
                 $out[] = self::hairline();
             }
-            foreach (self::spaceAfter($blocks, $after) as $b) {
+            foreach (self::spaceAfter($blocks, $after, $settled) as $b) {
                 $out[] = $b;
             }
         }
@@ -46,7 +49,7 @@ final class Flow
      * @param non-empty-list<BlockElement> $blocks
      * @return non-empty-list<BlockElement>
      */
-    private static function pagination(array $blocks, ComputedStyle $s): array
+    private static function pagination(array $blocks, ComputedStyle $s, Settled $settled): array
     {
         $last = count($blocks) - 1;
         foreach ($blocks as $i => $b) {
@@ -67,16 +70,16 @@ final class Flow
                 $changes['pageBreakBefore'] = true;
             }
             if ($changes !== []) {
-                $blocks[$i] = self::withParagraph($b, $changes);
+                $blocks[$i] = self::withParagraph($b, $changes, $settled);
             }
         }
         $lastBlock = $blocks[$last];
         if ($s->keepWithNext && $lastBlock instanceof Table) {
             // Word keeps a table with what follows through keepNext on the paragraphs of its last row.
-            $blocks[$last] = self::keepLastRowWithNext($lastBlock);
+            $blocks[$last] = self::keepLastRowWithNext($lastBlock, $settled);
         }
         if ($s->breakBefore && !$blocks[0] instanceof Paragraph) {
-            array_unshift($blocks, self::withParagraph(self::hairline(), ['pageBreakBefore' => true]));
+            array_unshift($blocks, self::withParagraph(self::hairline(), ['pageBreakBefore' => true], $settled));
         }
         if ($s->breakAfter) {
             $blocks[] = new PageBreak();
@@ -85,7 +88,7 @@ final class Flow
         return array_values($blocks);
     }
 
-    private static function keepLastRowWithNext(Table $t): Table
+    private static function keepLastRowWithNext(Table $t, Settled $settled): Table
     {
         $rows = $t->rows;
         $i = count($rows) - 1;
@@ -95,12 +98,15 @@ final class Flow
         $row = $rows[$i];
         $cells = [];
         foreach ($row->cells as $cell) {
-            $children = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? self::withParagraph($b, ['keepWithNext' => true]) : $b, $cell->children);
+            $children = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? self::withParagraph($b, ['keepWithNext' => true], $settled) : $b, $cell->children);
             $cells[] = new TableCell($children, $cell->style);
         }
         $rows[$i] = new TableRow($cells, $row->isHeader, $row->heightTwips, $row->cantSplit, $row->heightRule);
 
-        return new Table(array_values($rows), $t->style, $t->caption, $t->gridColumnsTwips);
+        $copy = new Table(array_values($rows), $t->style, $t->caption, $t->gridColumnsTwips);
+        $settled->carry($t, $copy);
+
+        return $copy;
     }
 
     /**
@@ -109,17 +115,30 @@ final class Flow
      */
     public static function hairline(float $after = 0.0): Paragraph
     {
-        return new Paragraph(
+        $p = new Paragraph(
             [new Run('', new RunStyle(sizeHalfPoints: 2))],
-            new ParagraphStyle(spaceAfterTwips: max(0, Units::tw($after) - 2), lineSpacingTwips: 2, lineSpacingRule: 'exact'),
+            new ParagraphStyle(spaceAfterTwips: max(0, Units::tw($after) - self::HAIRLINE), lineSpacingTwips: self::HAIRLINE, lineSpacingRule: 'exact'),
         );
+        self::$hairlines ??= new \WeakMap();
+        self::$hairlines[$p] = true;
+
+        return $p;
+    }
+
+    /** @var ?\WeakMap<Paragraph, true> paragraphs made by hairline(), and their copies */
+    private static ?\WeakMap $hairlines = null;
+
+    /** Whether the paragraph is a spacing hairline made here (or a copy with more spacing), not text. */
+    public static function isHairline(Paragraph $p): bool
+    {
+        return self::$hairlines !== null && isset(self::$hairlines[$p]);
     }
 
     /**
      * @param non-empty-list<BlockElement> $blocks
      * @return non-empty-list<BlockElement>
      */
-    public static function spaceAfter(array $blocks, float $points): array
+    public static function spaceAfter(array $blocks, float $points, Settled $settled): array
     {
         if ($points <= 0.0) {
             return $blocks;
@@ -127,7 +146,7 @@ final class Flow
         $last = count($blocks) - 1;
         $p = $blocks[$last];
         if ($p instanceof Paragraph) {
-            $blocks[$last] = self::withParagraph($p, ['spaceAfterTwips' => $p->style->spaceAfterTwips + Units::tw($points)]);
+            $blocks[$last] = self::withParagraph($p, ['spaceAfterTwips' => $p->style->spaceAfterTwips + Units::tw($points)], $settled);
         } else {
             $blocks[] = self::hairline($points);
         }
@@ -139,14 +158,14 @@ final class Flow
      * @param non-empty-list<BlockElement> $blocks
      * @return non-empty-list<BlockElement>
      */
-    public static function spaceBefore(array $blocks, float $points): array
+    public static function spaceBefore(array $blocks, float $points, Settled $settled): array
     {
         if ($points <= 0.0) {
             return $blocks;
         }
         $p = $blocks[0];
         if ($p instanceof Paragraph) {
-            $blocks[0] = self::withParagraph($p, ['spaceBeforeTwips' => $p->style->spaceBeforeTwips + Units::tw($points)]);
+            $blocks[0] = self::withParagraph($p, ['spaceBeforeTwips' => $p->style->spaceBeforeTwips + Units::tw($points)], $settled);
         } else {
             array_unshift($blocks, self::hairline($points));
         }
@@ -155,8 +174,15 @@ final class Flow
     }
 
     /** @param array<string, mixed> $changes ParagraphStyle constructor arguments */
-    public static function withParagraph(Paragraph $p, array $changes): Paragraph
+    public static function withParagraph(Paragraph $p, array $changes, Settled $settled): Paragraph
     {
-        return new Paragraph($p->children, new ParagraphStyle(...[...get_object_vars($p->style), ...$changes]), $p->headingLevel, $p->styleId);
+        $copy = new Paragraph($p->children, new ParagraphStyle(...[...get_object_vars($p->style), ...$changes]), $p->headingLevel, $p->styleId);
+        $settled->carry($p, $copy);
+        if (self::isHairline($p)) {
+            self::$hairlines ??= new \WeakMap();
+            self::$hairlines[$copy] = true;
+        }
+
+        return $copy;
     }
 }

@@ -136,4 +136,43 @@ final class PageSetupTest extends TestCase
         $d = self::export(Document::make(Page::a4()->body(Text::make('one')), Page::a4()->body(Text::make('two')->breakBefore())));
         self::assertSame(1, $d->count("//w:br[@w:type='page']") + $d->count('//w:pageBreakBefore'));
     }
+
+    public function test_mirrored_run_turns_on_mirror_margins(): void
+    {
+        $d = self::export(Page::a4()->margin(mm(20), mm(30), mm(20), mm(10))->mirrorMargins()->body(Text::make('x')));
+        self::assertSame(1, $d->count('//w:mirrorMargins', 'word/settings.xml'));
+        self::assertSame('567', $d->value(self::SECT . '/w:pgMar/@w:left'));
+        self::assertSame('1701', $d->value(self::SECT . '/w:pgMar/@w:right'));
+        self::assertSame([], self::exportedReports());
+    }
+
+    public function test_mixing_mirrored_and_unequal_margins_is_approximated(): void
+    {
+        $mirrored = Page::a4()->mirrorMargins()->body(Text::make('one'));
+        $d = self::export(Document::make($mirrored, Page::a5()->margin(mm(20), mm(30), mm(20), mm(20))->body(Text::make('two'))));
+        self::assertSame(['Approximated mirrored margins @ page[1]'], self::exportedReports());
+
+        self::export(Document::make($mirrored, Page::a5()->body(Text::make('two'))));
+        self::assertSame([], self::exportedReports());
+        self::export(Document::make(Page::a5()->margin(mm(20), mm(30), mm(20), mm(20))->body(Text::make('two'))));
+        self::assertCount(0, self::exportedReports());
+    }
+
+    public function test_mirrored_docx_opens(): void
+    {
+        $bytes = Document::make(Page::a4()->mirrorMargins()->body(Text::make('x')))->export(new \Papercut\Docx\DocxExporter())->bytes();
+        $file = (string) tempnam(sys_get_temp_dir(), 'docx');
+        file_put_contents($file, $bytes);
+        $zip = new \ZipArchive();
+        self::assertTrue($zip->open($file));
+        preg_match_all('~Target="([^"]+)"~', (string) $zip->getFromName('word/_rels/document.xml.rels'), $m);
+        foreach ($m[1] as $target) {
+            if (!str_starts_with($target, 'http')) {
+                self::assertNotFalse($zip->locateName('word/' . $target), $target);
+            }
+        }
+        self::assertNotFalse($zip->locateName('word/settings.xml'));
+        $zip->close();
+        unlink($file);
+    }
 }

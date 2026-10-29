@@ -56,9 +56,13 @@ final class RowMapper
                     $free = $k === 0 ? $x0 - $padL : $x0 - $x;
                     $segs[] = ['x0' => $x, 'x1' => $x0, 'item' => null, 'pad' => [0.0, 0.0], 'free' => max(0.0, $free)];
                 }
-                $empty = $item === null || $item['blocks'] === [];
-                // A plain item that grows can lend a little of its width too.
-                $lend = !$empty && $item['style'] instanceof ComputedStyle && $item['style']->grow > 0.0 && !BoxMapper::decorated($item['style']) ? $slot->width * 0.2 : 0.0;
+                // An item with no content still draws its own border and fill (a signature line is an empty bordered View);
+                // padding alone draws nothing, so that stays empty space.
+                $paints = $item !== null && $item['blocks'] === [] && $item['style'] instanceof ComputedStyle
+                    && ($item['style']->borderWidth->horizontal() + $item['style']->borderWidth->vertical() > 0.0 || Units::fill($item['style']->background) !== null);
+                $empty = $item === null || ($item['blocks'] === [] && !$paints);
+                // A plain item that grows can lend a little of its width too; an empty box that only draws lends its slack only if it grows (a fixed-width line keeps its length).
+                $lend = $paints ? ($item['style']->grow > 0.0 ? $slot->width : 0.0) : (!$empty && $item['style'] instanceof ComputedStyle && $item['style']->grow > 0.0 && !BoxMapper::decorated($item['style']) ? $slot->width * 0.2 : 0.0);
                 $segs[] = ['x0' => $x0, 'x1' => $x0 + $slot->width, 'item' => $empty ? null : $item, 'pad' => [0.0, 0.0], 'free' => $empty ? $slot->width : $lend];
                 $x = $x0 + $slot->width;
             }

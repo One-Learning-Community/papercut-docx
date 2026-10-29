@@ -78,12 +78,19 @@ final class FlowTest extends TestCase
     {
         foreach ([
             Column::make(Text::make('card'))->padding(pt(8))->breakBefore(),
-            Row::make(Text::make('a'), Text::make('b'))->breakBefore(),
+            Row::make(Text::make('a')->grow(1), Text::make('b'))->breakBefore(),
         ] as $second) {
             $d = self::export(Column::make(Text::make('first'), $second));
             self::assertSame(1, $d->count('//w:pPr/w:pageBreakBefore') + $d->count("//w:br[@w:type='page']"));
             self::assertSame(1, $d->count("/w:document/w:body/w:tbl/preceding-sibling::w:p[w:pPr/w:pageBreakBefore]"));
         }
+    }
+
+    public function test_break_before_on_an_inline_row_breaks_before_its_paragraph(): void
+    {
+        $d = self::export(Column::make(Text::make('first'), Row::make(Text::make('a'), Text::make('b'))->breakBefore()));
+        self::assertSame(0, $d->count('//w:tbl'));
+        self::assertSame(1, $d->count('//w:p[w:pPr/w:pageBreakBefore][.//w:t="a"]'));
     }
 
     public function test_keep_with_next_on_a_box_keeps_its_last_row_with_what_follows(): void
