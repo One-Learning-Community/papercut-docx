@@ -16,6 +16,10 @@ final class Documents
             $files = glob("$dir/*.php") ?: [];
             sort($files);
             foreach ($files as $file) {
+                // The certificate fills in a PDF template, which Word export leaves out, so there is nothing to compare.
+                if ($kind === 'examples' && basename($file, '.php') === 'certificate') {
+                    continue;
+                }
                 yield $kind . '-' . basename($file, '.php') => [$file];
             }
         }

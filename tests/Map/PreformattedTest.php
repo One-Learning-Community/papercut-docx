@@ -47,6 +47,32 @@ final class PreformattedTest extends TestCase
         self::assertSame('Inter', $doc->value('//w:r[w:t="plain "]/w:rPr/w:rFonts/@w:ascii'));
     }
 
+    public function test_span_code_and_text_code_give_the_same_runs_as_markup_code(): void
+    {
+        $viaMarkup = self::export(\Papercut\Text::markup('<code>x</code>'));
+        self::assertSame(self::runXml($viaMarkup, 'x'), self::runXml(self::export(\Papercut\Text::code('x')), 'x'));
+        self::assertStringContainsString('Courier New', self::runXml($viaMarkup, 'x'));
+
+        $mixedMarkup = self::export(\Papercut\Text::markup('plain <code>x</code> end'));
+        $mixedApi = self::export(\Papercut\Text::make('plain ')->append(\Papercut\Span::code('x'), ' end'));
+        foreach (['plain ', 'x', ' end'] as $t) {
+            self::assertSame(self::runXml($mixedMarkup, $t), self::runXml($mixedApi, $t));
+        }
+    }
+
+    private static function runXml(DocxInspector $doc, string $text): string
+    {
+        $nodes = $doc->xpath()->query('//w:r[w:t="' . $text . '"]');
+        self::assertNotFalse($nodes);
+        self::assertSame(1, $nodes->length);
+        $node = $nodes->item(0);
+        self::assertInstanceOf(\DOMElement::class, $node);
+        $xml = $node->ownerDocument?->saveXML($node);
+        self::assertIsString($xml);
+
+        return $xml;
+    }
+
     public function test_docx_pre_line_breaks_carry_the_mono_run_properties(): void
     {
         $doc = $this->docx("<pre>a\n\nb</pre>");
