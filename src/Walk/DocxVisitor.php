@@ -10,7 +10,7 @@ use Papercut\{Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber
 use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, Units};
 use Papercut\Export\Fidelity;
 use Papercut\Layout\{TableGrid, WidthResolver};
-use Papercut\Style\{Align, ComputedStyle, Direction, Justify, TextAlign};
+use Papercut\Style\{Align, ComputedStyle, Direction, Justify, StyleName, TextAlign};
 use Papercut\Tree\{Region, TreeVisitor, Visit};
 use Papercut\Value\{Auto, Edges, Length, Percent};
 
@@ -140,7 +140,7 @@ final class DocxVisitor implements TreeVisitor
             }
         } elseif ($node instanceof Table) {
             $frame->grid = TableGrid::of($node);
-            $frame->columns = TableMapper::settle($this->widths->tableColumns($node, $style, $width), WidthResolver::tracks($node));
+            $frame->columns = TableMapper::settle($this->widths->tableColumns($node, $style, $width, $at->path()), WidthResolver::tracks($node));
         } elseif ($node instanceof TableRow) {
             $frame->rowIndex = $parent->rowsSeen++;
             $frame->header = $at->inHeader() && $at->parent() instanceof Table && $at->parent()->repeatsHeader();
@@ -226,6 +226,10 @@ final class DocxVisitor implements TreeVisitor
             $style = BoxMapper::undecorated($style);
         } elseif ($glyph !== null) {
             $style = BoxMapper::undecorated($style);
+        } elseif ($node instanceof View && !$parent->isRow && !$frame->isRow && StyleName::leads($node->styleName(), 'code-block')
+            && BoxMapper::decorated($style) && ($shaded = $this->boxes->shadedParagraphs($blocks, $style, $this->lists->settled(), $at->path())) !== null) {
+            // A code block is paragraphs with a shaded, bordered box around them, not a table: its lines stay editable text.
+            $blocks = $shaded;
         } elseif (!$parent->isRow && !$frame->isRow && !$node instanceof Table && BoxMapper::decorated($style)) {
             $align = match ($style->alignSelf ?? $parent->style->alignItems ?? Align::Stretch) {
                 Align::Center => Alignment::Center,

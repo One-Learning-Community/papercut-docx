@@ -37,6 +37,13 @@ final class Flow
             if ($out !== [] && end($out) instanceof Table && $blocks[0] instanceof Table) {
                 $out[] = self::hairline();
             }
+            // Word draws consecutive paragraphs with identical borders as one box, so two boxes back to back (shaded code
+            // blocks) need an unbordered paragraph between them. The same separates two rules in a row (a rule is a bordered
+            // paragraph), which would otherwise merge into one line.
+            $prev = $out === [] ? null : end($out);
+            if ($prev instanceof Paragraph && $prev->style->borders !== null && $blocks[0] instanceof Paragraph && $blocks[0]->style->borders !== null) {
+                $out[] = self::hairline();
+            }
             foreach (self::spaceAfter($blocks, $after, $settled) as $b) {
                 $out[] = $b;
             }
@@ -53,6 +60,11 @@ final class Flow
     {
         $last = count($blocks) - 1;
         foreach ($blocks as $i => $b) {
+            if ($b instanceof Table && $s->keepTogether && $b->rows !== []) {
+                // Each row stays with the next; the last one too when more of the kept block follows.
+                $blocks[$i] = self::keepRowsWithNext($b, $settled, 0, count($b->rows) - ($i < $last ? 1 : 2));
+                continue;
+            }
             if (!$b instanceof Paragraph) {
                 continue;
             }
@@ -90,18 +102,23 @@ final class Flow
 
     private static function keepLastRowWithNext(Table $t, Settled $settled): Table
     {
+        return self::keepRowsWithNext($t, $settled, count($t->rows) - 1);
+    }
+
+    /** Word has no keep-together for a table: keepNext on the paragraphs of rows $from..$to (default: just $from) keeps them with the row after. */
+    public static function keepRowsWithNext(Table $t, Settled $settled, int $from, ?int $to = null): Table
+    {
         $rows = $t->rows;
-        $i = count($rows) - 1;
-        if ($i < 0) {
-            return $t;
+        $to ??= $from;
+        for ($i = max(0, $from); $i <= min($to, count($rows) - 1); $i++) {
+            $row = $rows[$i];
+            $cells = [];
+            foreach ($row->cells as $cell) {
+                $children = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? self::withParagraph($b, ['keepWithNext' => true], $settled) : $b, $cell->children);
+                $cells[] = new TableCell($children, $cell->style);
+            }
+            $rows[$i] = new TableRow($cells, $row->isHeader, $row->heightTwips, $row->cantSplit, $row->heightRule);
         }
-        $row = $rows[$i];
-        $cells = [];
-        foreach ($row->cells as $cell) {
-            $children = array_map(static fn (BlockElement $b): BlockElement => $b instanceof Paragraph ? self::withParagraph($b, ['keepWithNext' => true], $settled) : $b, $cell->children);
-            $cells[] = new TableCell($children, $cell->style);
-        }
-        $rows[$i] = new TableRow($cells, $row->isHeader, $row->heightTwips, $row->cantSplit, $row->heightRule);
 
         $copy = new Table(array_values($rows), $t->style, $t->caption, $t->gridColumnsTwips);
         $settled->carry($t, $copy);

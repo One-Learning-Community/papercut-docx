@@ -18,10 +18,19 @@ final class DocxPatcher
     /** Marks a run's highlight as run shading in a colour of its own; see shading(). */
     private const string SHADING = 'papercut-shd-';
 
+    /** Marks a border colour as also carrying the border's space, in points; see spaced(). */
+    private const string SPACE = 'papercut-sp';
+
     /** A highlight value patch() turns into run shading in $hex (six lower-case hex digits). */
     public static function shading(string $hex): string
     {
         return self::SHADING . $hex;
+    }
+
+    /** A border colour that carries its padding: patch() writes the padding as the border's space. */
+    public static function spaced(int $points, string $hex): string
+    {
+        return self::SPACE . $points . '-' . $hex;
     }
 
     public static function patch(string $bytes, PatchSpec $spec): string
@@ -31,8 +40,14 @@ final class DocxPatcher
             if (preg_match('~^word/(document|styles|header\d+|footer\d+)\.xml$~', $name) === 1) {
                 $xml = str_replace(['<w:jc w:val="start"/>', '<w:jc w:val="end"/>'], ['<w:jc w:val="left"/>', '<w:jc w:val="right"/>'], $xml);
                 $xml = (string) preg_replace('~<w:highlight w:val="' . self::SHADING . '([0-9a-f]{6})"/>~', '<w:shd w:val="clear" w:color="auto" w:fill="$1"/>', $xml);
-                if (str_contains($xml, self::SHADING)) {
+                $xml = (string) preg_replace('~w:space="0" w:color="' . self::SPACE . '(\d+)-([0-9A-Fa-f]{6})"~', 'w:space="$1" w:color="$2"', $xml);
+                // The rewrites depend on php-docx's attribute order (w:space before w:color) and fail loudly if it changes.
+                // Only attribute values are checked: body text may contain the marker words.
+                if (preg_match('~w:val="' . self::SHADING . '~', $xml) === 1) {
                     throw new \LogicException('php-docx output changed: run highlight in ' . $name . ' not found');
+                }
+                if (preg_match('~w:color="' . self::SPACE . '~', $xml) === 1) {
+                    throw new \LogicException('php-docx output changed: border space in ' . $name . ' not found');
                 }
                 $parts[$name] = $xml;
             }

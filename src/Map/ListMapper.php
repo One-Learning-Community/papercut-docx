@@ -127,7 +127,9 @@ final class ListMapper
         }
         // A rule (an exact line under a point, drawn by its border) clips a label as a hairline does, but it must stay: the label gets its own line above.
         $clipped = $first instanceof Paragraph && $first->style->lineSpacingRule === 'exact' && ($first->style->lineSpacingTwips ?? PHP_INT_MAX) < 20;
-        if ($marked && !($first instanceof Paragraph && !$clipped && !$this->settled->has($first))) {
+        // A bordered paragraph (a shaded code block, whose label is inside its box) can't carry the marker either: it would sit in the box.
+        $boxed = $first instanceof Paragraph && $first->style->borders !== null;
+        if ($marked && !($first instanceof Paragraph && !$clipped && !$boxed && !$this->settled->has($first))) {
             array_unshift($blocks, new Paragraph([]));
         }
         foreach ($blocks as $k => $b) {

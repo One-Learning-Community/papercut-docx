@@ -124,4 +124,32 @@ final class TableMapperTest extends TestCase
         self::assertSame('p', $d->xpath()->evaluate("local-name($last)"));
         self::assertSame('exact', $d->value("$last/w:pPr/w:spacing/@w:lineRule"));
     }
+
+    public function test_a_table_too_wide_for_the_page_shrinks_its_columns_to_fit_and_reports_it(): void
+    {
+        $long = str_repeat('Supercalifragilistic', 4);
+        $table = Table::make()->columns('auto auto auto')->row($long, $long, 'short');
+        $d = self::export($table);
+        $page = (int) $d->value('//w:sectPr/w:pgSz/@w:w') - (int) $d->value('//w:sectPr/w:pgMar/@w:left') - (int) $d->value('//w:sectPr/w:pgMar/@w:right');
+        self::assertLessThanOrEqual($page, array_sum(array_map('intval', $d->values('//w:tblGrid/w:gridCol/@w:w'))));
+        self::assertCount(1, array_filter(self::exportedReports(), static fn (string $r): bool => str_starts_with($r, 'Approximated table columns narrower than their content')));
+    }
+
+    public function test_each_shrunk_table_is_reported_at_its_own_path(): void
+    {
+        $long = str_repeat('Supercalifragilistic', 4);
+        $table = static fn (): Table => Table::make()->columns('auto auto')->row($long, $long);
+        self::export(Page::a4()->header($table())->body($table(), $table()));
+        $paths = array_map(
+            static fn (string $r): string => substr($r, strpos($r, ' @ ') + 3),
+            array_values(array_filter(self::exportedReports(), static fn (string $r): bool => str_contains($r, 'table columns narrower'))),
+        );
+        self::assertSame(['page > header > table[0]', 'page > body > table[0]', 'page > body > table[1]'], $paths);
+    }
+
+    public function test_hand_set_columns_wider_than_the_page_do_not_throw(): void
+    {
+        $d = self::export(Table::make()->columns('400pt 400pt')->row('a', 'b'));
+        self::assertSame(['8000', '8000'], $d->values('//w:tblGrid/w:gridCol/@w:w'));
+    }
 }

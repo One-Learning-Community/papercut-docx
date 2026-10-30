@@ -50,6 +50,32 @@ final class FlowTest extends TestCase
         self::assertSame(1, $d->count($p('after') . "/following-sibling::w:p[1]//w:br[@w:type='page']"));
     }
 
+    public function test_keep_together_table_keeps_each_row_with_the_next(): void
+    {
+        $d = self::export(\Papercut\Table::make()->columns('1fr 1fr')->head('H1', 'H2')->row('a1', 'a2')->row('b1', 'b2')->keepTogether());
+        $row = static fn (int $i): string => "/w:document/w:body/w:tbl/w:tr[$i]";
+        self::assertCount(3, $d->values('/w:document/w:body/w:tbl/w:tr'));
+        self::assertCount(2, $d->values($row(1) . '//w:p/w:pPr/w:keepNext'));
+        self::assertCount(2, $d->values($row(2) . '//w:p/w:pPr/w:keepNext'));
+        self::assertSame([], $d->values($row(3) . '//w:p/w:pPr/w:keepNext'));
+    }
+
+    public function test_without_keep_together_table_rows_are_not_kept_together(): void
+    {
+        $d = self::export(\Papercut\Table::make()->columns('1fr 1fr')->row('a1', 'a2')->row('b1', 'b2'));
+        self::assertSame([], $d->values('//w:keepNext'));
+    }
+
+    public function test_keep_together_column_keeps_a_table_with_what_follows_inside_it(): void
+    {
+        $d = self::export(Column::make(
+            Column::make(\Papercut\Table::make()->columns('1fr')->row('a')->row('b'), Text::make('after'))->keepTogether(),
+            Text::make('outside'),
+        ));
+        self::assertCount(2, $d->values('/w:document/w:body/w:tbl/w:tr//w:p/w:pPr/w:keepNext'));
+        self::assertSame(0, $d->count(self::P . "[.//w:t='after']/w:pPr/w:keepNext"));
+    }
+
     public function test_page_break_node(): void
     {
         $d = self::export(Column::make(Text::make('a'), PageBreak::make(), Text::make('b')));

@@ -29,7 +29,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "papercut/core": "0.4.x-dev"
+                    "papercut/core": "0.5.x-dev"
                 }
             }
         }
@@ -38,10 +38,11 @@
         "php": "^8.4",
         "ext-zip": "*",
         "dskripchenko/php-docx": "^1.18",
-        "papercut/core": "^0.4"
+        "papercut/core": "^0.5"
     },
     "require-dev": {
         "bacon/bacon-qr-code": "^3.1",
+        "phiki/phiki": "^2.2",
         "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.4"
     },

@@ -6,6 +6,7 @@ namespace Papercut\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Paragraph, Run, Table, TableCell, TableRow};
 use Dskripchenko\PhpDocx\Style\{Alignment, Border, BorderSet, BorderStyle as DocxBorderStyle, CellStyle, ParagraphStyle, RowHeightRule, RunStyle, TableStyle, VerticalAlign};
+use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
 use Papercut\Style\{BorderStyle, ComputedStyle};
@@ -135,6 +136,51 @@ final class BoxMapper
         }
 
         return new Table($rows, $table, gridColumnsTwips: [$width]);
+    }
+
+    /**
+     * A code block's box as paragraph shading and borders, which Word draws around consecutive paragraphs as one
+     * box and which a reader can still select and edit line by line. Null where the box is anything else (a
+     * border on some sides only, a fixed size, a child that is not a paragraph), which keeps its table.
+     *
+     * @param list<BlockElement> $blocks
+     * @return ?list<BlockElement>
+     */
+    public function shadedParagraphs(array $blocks, ComputedStyle $s, Settled $settled, string $path): ?array
+    {
+        $w = $s->borderWidth;
+        $fill = Units::fill($s->background);
+        if ($blocks === [] || $fill === null || $s->height instanceof Length || !$s->width instanceof Auto
+            || min($w->top->points, $w->right->points, $w->bottom->points, $w->left->points) <= 0.0) {
+            return null;
+        }
+        foreach ($blocks as $b) {
+            if (!$b instanceof Paragraph) {
+                return null;
+            }
+        }
+        if ($s->radius > 0.0) {
+            $this->fidelity->dropped('radius', $path);
+        }
+        $style = $s->borderStyle === BorderStyle::Dashed ? DocxBorderStyle::Dashed : DocxBorderStyle::Single;
+        $color = Units::hex($s->borderColor);
+        // php-docx writes w:space="0"; DocxPatcher reads the padding out of the colour and writes it as the space.
+        $side = static fn (Length $width, Length $pad): Border => new Border($style, max(2, (int) round($width->points * 8)), DocxPatcher::spaced((int) round(min(31.0, $pad->points)), $color));
+        $borders = new BorderSet(
+            $side($w->top, $s->padding->top),
+            $side($w->right, $s->padding->right),
+            $side($w->bottom, $s->padding->bottom),
+            $side($w->left, $s->padding->left),
+        );
+        $left = Units::tw($s->padding->left->points + $w->left->points + $s->margin->left->points);
+        $right = Units::tw($s->padding->right->points + $w->right->points + $s->margin->right->points);
+
+        return array_map(static fn (Paragraph $p): Paragraph => Flow::withParagraph($p, [
+            'borders' => $borders,
+            'shadingColor' => $fill,
+            'indentLeftTwips' => $p->style->indentLeftTwips + $left,
+            'indentRightTwips' => $p->style->indentRightTwips + $right,
+        ], $settled), $blocks);
     }
 
     /** @param array{float, float, float, float} $extraPad top, right, bottom, left in pt */
