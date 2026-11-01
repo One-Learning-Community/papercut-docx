@@ -8,11 +8,11 @@ use Papercut\{Column, Page, Table, TableCell, TableRow, Text};
 use Papercut\Docx\Tests\Support\Styles;
 use Papercut\Export\ExportOptions;
 use Papercut\Layout\WidthResolver;
-use Papercut\Style\{Justify, Style};
+use Papercut\Style\{Align, Justify, Style};
 use Papercut\Value\{Auto, Fr};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Papercut\{percent, pt};
 
 final class TableMapperTest extends TestCase
 {
@@ -26,6 +26,18 @@ final class TableMapperTest extends TestCase
             ->head('Item', 'Qty', 'Price', 'Total')
             ->row('Widget', '2', '$10', '$20')
             ->row('Gadget', '1', '$5', '$5');
+    }
+
+    public function test_a_table_aligned_in_its_column_keeps_its_alignment(): void
+    {
+        $d = self::export(Column::make(
+            Table::make()->row('Subtotal', '$1')->width(percent(45))->alignSelf(Align::End),
+            Table::make()->row('Subtotal', '$1')->width(percent(45))->alignSelf(Align::Center),
+            Table::make()->row('Subtotal', '$1')->width(percent(45)),
+        ));
+        self::assertSame('right', $d->value(self::TBL . '[1]/w:tblPr/w:jc/@w:val'));
+        self::assertSame('center', $d->value(self::TBL . '[2]/w:tblPr/w:jc/@w:val'));
+        self::assertNotSame('right', $d->value(self::TBL . '[3]/w:tblPr/w:jc/@w:val'));
     }
 
     public function test_grid_matches_width_resolver_columns(): void

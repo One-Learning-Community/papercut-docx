@@ -209,7 +209,11 @@ final class DocxVisitor implements TreeVisitor
             $node instanceof ListNode => $this->leaveList($frame),
             $node instanceof ListItem => $this->lists->item(Flow::blocks($frame, $this->lists->settled()), $at->path()),
             $node instanceof Link => $this->leaveLink($frame),
-            $node instanceof Table => [$this->tables->table($style, $frame)],
+            $node instanceof Table => [$this->tables->table($style, $frame, $parent->isRow ? null : match ($style->alignSelf ?? $parent->style->alignItems ?? Align::Stretch) {
+                Align::Center => Alignment::Center,
+                Align::End => Alignment::End,
+                default => null,
+            })],
             $frame->isRow => [$this->inline->line($style, $frame, $at->path()) ?? $this->rows->row($style, $frame, $at->path())],
             default => Flow::blocks($frame, $this->lists->settled()),
         };

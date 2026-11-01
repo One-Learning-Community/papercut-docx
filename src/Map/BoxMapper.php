@@ -9,7 +9,7 @@ use Dskripchenko\PhpDocx\Style\{Alignment, Border, BorderSet, BorderStyle as Doc
 use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
-use Papercut\Style\{BorderStyle, ComputedStyle};
+use Papercut\Style\{BorderStyle, ComputedStyle, Justify};
 use Papercut\Value\{Auto, Edges, Length};
 
 /** Boxes with padding, a border or a background, as single-cell tables. */
@@ -76,7 +76,12 @@ final class BoxMapper
 
         return new Table(
             [new TableRow(
-                [new TableCell(self::cellContent($blocks), $this->cellStyle($s, Units::tw($width)))],
+                // A column box packed to its end or centre (a signature line) places its content the same way in the cell.
+                [new TableCell(self::cellContent($blocks), $this->cellStyle($s, Units::tw($width), v: match ($s->justify) {
+                    Justify::End => VerticalAlign::Bottom,
+                    Justify::Center => VerticalAlign::Center,
+                    default => VerticalAlign::Top,
+                }))],
                 heightTwips: $height,
                 cantSplit: $s->keepTogether,
                 heightRule: $s->height instanceof Length ? RowHeightRule::Exact : RowHeightRule::AtLeast,
@@ -127,7 +132,9 @@ final class BoxMapper
                 $edge($own?->left, $outer?->left),
             );
             $padTop = $cell->style->paddingTopTwips + ($i === 0 ? Units::tw($s->borderWidth->top->points) : 0);
-            $style = new CellStyle(...[...get_object_vars($cell->style), 'widthTwips' => $width, 'borders' => $borders, 'paddingTopTwips' => $padTop]);
+            // The box's fill shows through every row that has none of its own (a flat card's body).
+            $fill = $cell->style->backgroundColor ?? Units::fill($s->background);
+            $style = new CellStyle(...[...get_object_vars($cell->style), 'widthTwips' => $width, 'borders' => $borders, 'paddingTopTwips' => $padTop, 'backgroundColor' => $fill]);
             $rows[$i] = new TableRow([new TableCell($cell->children, $style)], $row->isHeader, $row->heightTwips, $row->cantSplit || $s->keepTogether, $row->heightRule);
         }
         $table = self::tableStyle($frame->width);

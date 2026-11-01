@@ -28,6 +28,15 @@ final class DocxPatcher
         return self::SHADING . $hex;
     }
 
+    /**
+     * A highlight value patch() turns into a run border (`w:bdr`, $eighths of a point wide, `single` or `dashed`,
+     * in $hex), with run shading in $fill when it is given. Word draws adjacent runs with the same border as one box.
+     */
+    public static function boxed(?string $fill, int $eighths, string $style, string $hex): string
+    {
+        return self::SHADING . ($fill ?? 'none') . '-bdr' . $eighths . '-' . $style . '-' . $hex;
+    }
+
     /** A border colour that carries its padding: patch() writes the padding as the border's space. */
     public static function spaced(int $points, string $hex): string
     {
@@ -40,6 +49,12 @@ final class DocxPatcher
         foreach ($parts as $name => $xml) {
             if (preg_match('~^word/(document|styles|header\d+|footer\d+)\.xml$~', $name) === 1) {
                 $xml = str_replace(['<w:jc w:val="start"/>', '<w:jc w:val="end"/>'], ['<w:jc w:val="left"/>', '<w:jc w:val="right"/>'], $xml);
+                $xml = (string) preg_replace_callback(
+                    '~<w:highlight w:val="' . self::SHADING . '(none|[0-9a-f]{6})-bdr(\\d+)-(single|dashed)-([0-9a-f]{6})"/>~',
+                    static fn (array $m): string => '<w:bdr w:val="' . $m[3] . '" w:sz="' . $m[2] . '" w:space="0" w:color="' . $m[4] . '"/>'
+                        . ($m[1] === 'none' ? '' : '<w:shd w:val="clear" w:color="auto" w:fill="' . $m[1] . '"/>'),
+                    $xml,
+                );
                 $xml = (string) preg_replace('~<w:highlight w:val="' . self::SHADING . '([0-9a-f]{6})"/>~', '<w:shd w:val="clear" w:color="auto" w:fill="$1"/>', $xml);
                 $xml = (string) preg_replace('~w:space="0" w:color="' . self::SPACE . '(\d+)-([0-9A-Fa-f]{6})"~', 'w:space="$1" w:color="$2"', $xml);
                 // The rewrites depend on php-docx's attribute order (w:space before w:color) and fail loudly if it changes.

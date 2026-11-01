@@ -113,6 +113,25 @@ final class BoxMapperTest extends TestCase
         self::assertSame(1, $d->count(self::TBL . '[1]/following-sibling::*[2][self::w:tbl]'));
     }
 
+    public function test_a_tinted_titled_card_tints_every_row(): void
+    {
+        $d = self::export(Card::make(Text::make('Body'))->title('Title')->variant('flat'));
+        self::assertSame(1, $d->count('//w:tc[w:tcPr/w:shd[@w:fill="f1f5f9"]][.//w:t="Title"]'));
+        self::assertSame(1, $d->count('//w:tc[w:tcPr/w:shd[@w:fill="f8fafc"]][.//w:t="Body"]'));
+    }
+
+    public function test_a_box_justified_to_its_end_sits_its_content_at_the_bottom(): void
+    {
+        $d = self::export(Column::make(
+            View::make(Text::make('low'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Papercut\Style\Justify::End),
+            View::make(Text::make('mid'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Papercut\Style\Justify::Center),
+            View::make(Text::make('top'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0))),
+        ));
+        self::assertSame('bottom', $d->value('//w:tc[.//w:t="low"]/w:tcPr/w:vAlign/@w:val'));
+        self::assertSame('center', $d->value('//w:tc[.//w:t="mid"]/w:tcPr/w:vAlign/@w:val'));
+        self::assertNotSame('bottom', $d->value('//w:tc[.//w:t="top"]/w:tcPr/w:vAlign/@w:val'));
+    }
+
     public function test_a_box_aligned_in_its_column_shrinks_to_its_content(): void
     {
         $d = self::export(Column::make(

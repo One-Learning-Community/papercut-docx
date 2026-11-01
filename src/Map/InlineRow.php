@@ -11,7 +11,7 @@ use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
 use Papercut\Layout\WidthResolver;
 use Papercut\View;
-use Papercut\Style\{ComputedStyle, Justify};
+use Papercut\Style\{BorderStyle, ComputedStyle, Justify};
 use Papercut\Value\Auto;
 
 /**
@@ -20,8 +20,9 @@ use Papercut\Value\Auto;
  *
  * A row qualifies when, in the PDF, it is a single flex line packed at the start, undecorated and unsized, and every
  * item is one paragraph of text runs (links included) that is content-sized: it does not grow, has no width, height,
- * margin or border, and carries padding only when it has a background (a badge), which becomes a no-break space on
- * each side inside the shading. A rounded corner is lost; that is reported. The items' max-content widths plus the
+ * margin, and carries a border or padding only when it is a badge: a background, or the same solid or dashed border on
+ * every side, or both. The fill becomes run shading, the border a run border (Word joins the runs into one box), and
+ * the padding a no-break space on each side inside them. A rounded corner is lost; that is reported. The items' max-content widths plus the
  * gaps must fit the row, so the PDF sets them on one line without squeezing any; otherwise the PDF wraps a long item
  * in its own column, and the row keeps its table. Anything else keeps its table.
  */
@@ -99,13 +100,26 @@ final class InlineRow
     private static function inline(ComputedStyle $i): bool
     {
         $shaded = Units::fill($i->background) !== null;
+        $border = $i->borderWidth->horizontal() + $i->borderWidth->vertical() > 0.0;
 
         return $i->grow === 0.0 && $i->width instanceof Auto && $i->height instanceof Auto
             && $i->basis instanceof Auto && $i->minWidth === null && $i->maxWidth === null
             && $i->minHeight === null && $i->maxHeight === null
             && $i->margin->horizontal() + $i->margin->vertical() === 0.0
-            && $i->borderWidth->horizontal() + $i->borderWidth->vertical() === 0.0
-            && ($shaded || $i->padding->horizontal() + $i->padding->vertical() === 0.0);
+            && (!$border || self::evenBorder($i) !== null)
+            && ($shaded || $border || $i->padding->horizontal() + $i->padding->vertical() === 0.0);
+    }
+
+    /** The border's width in eighths of a point when every side has the same one, as a run border must; else null. */
+    private static function evenBorder(ComputedStyle $i): ?int
+    {
+        $w = $i->borderWidth;
+        $top = $w->top->points;
+        if ($top <= 0.0 || abs($w->right->points - $top) > self::EPSILON || abs($w->bottom->points - $top) > self::EPSILON || abs($w->left->points - $top) > self::EPSILON) {
+            return null;
+        }
+
+        return max(2, (int) round($top * 8));
     }
 
     /** @param list<InlineElement> $children */
@@ -128,10 +142,14 @@ final class InlineRow
     private function item(Paragraph $p, ComputedStyle $i, string $path): array
     {
         $fill = Units::fill($i->background);
-        if ($fill === null) {
+        $border = self::evenBorder($i);
+        if ($fill === null && $border === null) {
             return $p->children;
         }
-        $shade = static fn (RunStyle $r): RunStyle => $r->highlight !== null ? $r : new RunStyle(...[...get_object_vars($r), 'highlight' => DocxPatcher::shading($fill)]);
+        $mark = $border === null
+            ? DocxPatcher::shading((string) $fill)
+            : DocxPatcher::boxed($fill, $border, $i->borderStyle === BorderStyle::Dashed ? 'dashed' : 'single', Units::hex($i->borderColor));
+        $shade = static fn (RunStyle $r): RunStyle => $r->highlight !== null ? $r : new RunStyle(...[...get_object_vars($r), 'highlight' => $mark]);
         $out = [];
         $firstRun = null;
         $lastRun = null;

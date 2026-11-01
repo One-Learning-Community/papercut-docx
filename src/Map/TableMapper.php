@@ -6,7 +6,7 @@ namespace Papercut\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Table, TableCell as DocxCell, TableRow};
 use Dskripchenko\PhpDocx\Element\Paragraph;
-use Dskripchenko\PhpDocx\Style\{CellStyle, TableStyle, VerticalAlign};
+use Dskripchenko\PhpDocx\Style\{Alignment, CellStyle, TableStyle, VerticalAlign};
 use Papercut\Layout\GridCell;
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
@@ -60,9 +60,13 @@ final class TableMapper
         return array_values($columns);
     }
 
-    public function table(ComputedStyle $s, Frame $frame): Table
+    /** $align places a table that doesn't stretch across its column, as `align-self` does in the PDF. */
+    public function table(ComputedStyle $s, Frame $frame, ?Alignment $align = null): Table
     {
         $style = BoxMapper::tableStyle($frame->width);
+        if ($align !== null) {
+            $style = new TableStyle(...[...get_object_vars($style), 'alignment' => $align]);
+        }
         $borders = BoxMapper::borders($s);
         if ($borders !== null) {
             $style = new TableStyle(...[...get_object_vars($style), 'borders' => $borders]);

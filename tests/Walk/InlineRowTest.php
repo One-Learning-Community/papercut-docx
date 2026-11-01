@@ -35,6 +35,34 @@ final class InlineRowTest extends TestCase
         self::assertContains('approximated badge in a line', array_map(static fn ($r): string => strtolower($r->level->name) . ' ' . $r->feature, self::$exported));
     }
 
+    public function test_outline_badges_are_bordered_runs_in_one_paragraph(): void
+    {
+        $d = self::export(Row::make(Badge::make('Tip')->tone('tip')->variant('outline'), Badge::make('Danger')->tone('danger')->variant('outline'))->gap(pt(6)));
+        self::assertSame(0, $d->count('//w:tbl'));
+        self::assertSame(1, $d->count('/w:document/w:body/w:p'));
+        // each badge's text and the no-break space on each side carry the tone's border (emerald-300, red-300), with no fill
+        self::assertSame(3, $d->count('//w:r[w:rPr/w:bdr[@w:val="single" and @w:color="6ee7b7"]]'));
+        self::assertSame(3, $d->count('//w:r[w:rPr/w:bdr[@w:color="fca5a5"]]'));
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:bdr][w:t="Tip"]'));
+        self::assertSame(0, $d->count('//w:r[w:rPr/w:shd]'));
+        // the space between the badges has no border, so Word draws two boxes
+        self::assertSame(1, $d->count('//w:r[not(w:rPr/w:bdr)][w:t=" "]'));
+        self::assertSame('6', $d->value('//w:r[w:t="Tip"]/w:rPr/w:bdr/@w:sz'));
+    }
+
+    public function test_a_badge_with_fill_and_border_keeps_both(): void
+    {
+        $d = self::export(Row::make(Badge::make('Both')->tone('warning')->borderWidth(\Papercut\Value\Edges::all(pt(1)))));
+        self::assertSame(0, $d->count('//w:tbl'));
+        self::assertSame(1, $d->count('//w:r[w:t="Both"][w:rPr/w:bdr[@w:color="fcd34d"]][w:rPr/w:shd[@w:fill="fef3c7"]]'));
+    }
+
+    public function test_a_badge_with_uneven_borders_keeps_its_table(): void
+    {
+        $d = self::export(Row::make(Badge::make('Odd')->borderWidth(\Papercut\Value\Edges::of(pt(1), pt(0)))));
+        self::assertSame(1, $d->count('//w:tbl'));
+    }
+
     public function test_the_same_row_at_top_level_is_one_paragraph(): void
     {
         $d = self::export(Row::make(Link::to('https://example.com', 'Example site'), Badge::make('Website')));
@@ -89,7 +117,7 @@ final class InlineRowTest extends TestCase
         yield 'a basis' => [Row::make(Text::make('Label')->basis(pt(150)), 'value')];
         yield 'a min width' => [Row::make(Text::make('Label')->minWidth(pt(150)), 'value')];
         yield 'a max width' => [Row::make(Text::make('Label')->maxWidth(pt(50)), 'value')];
-        yield 'a bordered item' => [Row::make(View::make('a')->apply(Style::make(borderWidth: \Papercut\Value\Edges::of(pt(1)))), 'b')];
+        yield 'an item bordered on one side' => [Row::make(View::make('a')->apply(Style::make(borderWidth: \Papercut\Value\Edges::of(pt(0), pt(0), pt(1), pt(0)))), 'b')];
         yield 'a two paragraph item' => [Row::make(View::make('a', 'b'), 'c')];
         yield 'a decorated row' => [Row::make('a', 'b')->apply(Style::make(padding: \Papercut\Value\Edges::of(pt(6))))];
         yield 'a wrapped row' => [Row::make(...array_map(static fn (int $i): string => str_repeat('word', 20) . $i, range(1, 4)))->wrap()];
