@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Map;
 
-use Dskripchenko\PhpDocx\Element\{Field, Hyperlink, InlineElement, Paragraph, Run};
+use Dskripchenko\PhpDocx\Element\{Bookmark, Field, Hyperlink, InlineElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle, RunStyle};
 use Papercut\{Node, PageNumber, Text, View};
 use Papercut\Docx\Package\DocxPatcher;
@@ -22,13 +22,20 @@ final class TextMapper
         private readonly LineMetrics $metrics,
         private readonly Fidelity $fidelity,
         private readonly WordFonts $fonts,
-        private readonly ?Theme $theme = null,
+        private ?Theme $theme = null,
     ) {
+    }
+
+    /** Maps spans with the page's theme from here on. */
+    public function usePage(Theme $theme): void
+    {
+        $this->theme = $theme;
     }
 
     /** @param ?string $blockHref the enclosing block link, applied to runs without a link of their own */
     /** @param ?Color $backdrop what faded text lies on (white when null) */
-    public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null, ?Color $backdrop = null): Paragraph
+    /** @param ?string $bookmark a Word bookmark around the paragraph's content, for a table of contents entry to link to */
+    public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null, ?Color $backdrop = null, ?string $bookmark = null): Paragraph
     {
         $backdrop ??= Color::white();
         /** @var list<array{Run, ?string, bool}> $runs run, link, whether it is a line break */
@@ -59,6 +66,10 @@ final class TextMapper
             'h1' => 1, 'h2' => 2, 'h3' => 3, 'h4' => 4,
             default => null,
         };
+
+        if ($bookmark !== null) {
+            $children = [new Bookmark($bookmark, $children)];
+        }
 
         return new Paragraph($children, $this->paragraphStyle($s), $level);
     }

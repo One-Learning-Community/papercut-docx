@@ -12,12 +12,17 @@ use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, WordFonts};
+use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
 use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
-use Papercut\Export\{ExportOptions, Exporter, Fidelity, NoteReporter, Output};
+use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
+use Papercut\Layout\{LayoutContext, LayoutEngine, Paginator};
+use Papercut\OverflowMode;
+use Papercut\Paint\Painter;
+use Papercut\Text\FontRegistry;
+use Papercut\Toc\TocIndex;
 use Papercut\Layout\WidthResolver;
-use Papercut\Style\StyleResolver;
+use Papercut\Style\PageThemes;
 use Papercut\Tree\TreeWalker;
 
 /**
@@ -26,14 +31,18 @@ use Papercut\Tree\TreeWalker;
  */
 final class DocxExporter implements Exporter
 {
+    /** @internal How many times the hidden page layout for a table of contents has started; tests read it. */
+    public static int $layoutPasses = 0;
+
     public const string MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
     public function export(Document $doc, ExportOptions $options): Output
     {
         $options = DocxOptions::from($options);
-        $styles = new StyleResolver($options->theme());
+        $themes = PageThemes::for($options->theme(), $doc);
+        $styles = $themes->documentStyles();
         $fidelity = new Fidelity('docx', $options);
-        NoteReporter::report($doc, $styles, $fidelity);
+        NoteReporter::report($doc, $themes, $fidelity);
 
         $pages = $doc->pages();
         foreach ($pages as $i => $page) {
@@ -69,8 +78,10 @@ final class DocxExporter implements Exporter
         $root = $styles->root();
         $fonts = new WordFonts($options->fonts());
         $fonts->name($root->fontFamily);
-        $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $options->theme());
-        $widths = WidthResolver::for($options);
+        $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $themes->document());
+        $index = TocIndex::collect($doc, $themes);
+        $widths = WidthResolver::for($options, 'docx', $index, $themes);
+        $toc = $index->hasToc() ? new TocMapper($index, self::anchorPages($doc, $options, $index, $themes), $styles, $text, $fonts) : null;
         $visitor = new DocxVisitor(
             $fidelity,
             $widths,
@@ -81,8 +92,10 @@ final class DocxExporter implements Exporter
             new TableMapper($fidelity, $boxes),
             new ListMapper($numbering, $fidelity),
             new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect()),
+            $toc,
+            $themes,
         );
-        (new TreeWalker($styles))->walk($doc, $visitor);
+        (new TreeWalker($themes))->walk($doc, $visitor);
         $sections = $this->sections($visitor);
         $first = $visitor->pages()[0]['page'];
 
@@ -105,10 +118,44 @@ final class DocxExporter implements Exporter
 
         $bytes = DocxPatcher::patch(
             (new Word2007Writer($registry))->write($docx),
-            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written()),
+            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? []),
+            $fidelity,
         );
 
         return new Output($bytes, self::MIME, 'docx');
+    }
+
+    /**
+     * The page each heading that a table of contents lists falls on in the PDF layout, by destination. Word paginates
+     * itself, so this runs only for a document with a table of contents, to fill in its page numbers. It clips what is
+     * too tall instead of throwing, says nothing, and gives no pages at all when the layout fails for any reason, so a
+     * document that exports today never starts failing; the field is then written without page numbers.
+     *
+     * @return array<string, int>
+     */
+    private static function anchorPages(Document $doc, DocxOptions $options, TocIndex $index, PageThemes $themes): array
+    {
+        self::$layoutPasses++;
+        try {
+            $pdf = PdfOptions::from($options);
+            $backend = $pdf->backend();
+            $ctx = new LayoutContext(
+                FontRegistry::fromSet($pdf->fonts(), $backend),
+                $themes->document(),
+                $backend,
+                OverflowMode::Clip,
+                static function (string $message, ?FidelityReport $report = null): void {
+                },
+                $pdf->fonts()->fallbacks,
+            );
+            $ctx->themes = $themes;
+            $ctx->toc = $index;
+
+            return Painter::anchorPages((new Paginator(new LayoutEngine($ctx), $ctx))->paginate($doc));
+        } catch (\Throwable) {
+            // Word export must never fail for want of page numbers: the field is written without them.
+            return [];
+        }
     }
 
     /** The path fidelity reports use for a page: indexed only when the document has several. */

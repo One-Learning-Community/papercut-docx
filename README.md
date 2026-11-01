@@ -13,9 +13,8 @@ Word's paragraphs and tables; php-docx writes the file. Thank you.
 
 **Documentation:** [Word export](https://one-learning-community.github.io/papercut/guide/word-export.html)
 
-> **Status: experimental.** Word, LibreOffice and Google Docs lay out
-> the file themselves, so spacing and page breaks can differ slightly from the PDF, and the output may change between
-> minor versions while it settles.
+> Word, LibreOffice and Google Docs lay out the file themselves, so spacing and page breaks can differ slightly from
+> the PDF.
 
 ## Install
 

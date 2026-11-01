@@ -6,11 +6,11 @@ namespace Papercut\Docx\Walk;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, HorizontalAnchor, ImagePosition, ParagraphStyle, VerticalAnchor};
-use Papercut\{Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, View};
-use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, Units};
+use Papercut\{Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
+use Papercut\Docx\Map\{BoxMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
 use Papercut\Export\Fidelity;
 use Papercut\Layout\{TableGrid, WidthResolver};
-use Papercut\Style\{Align, ComputedStyle, Direction, Justify, StyleName, TextAlign};
+use Papercut\Style\{PageThemes, Align, ComputedStyle, Direction, Justify, StyleName, TextAlign};
 use Papercut\Tree\{Region, TreeVisitor, Visit};
 use Papercut\Value\{Auto, Edges, Length, Percent};
 
@@ -54,6 +54,10 @@ final class DocxVisitor implements TreeVisitor
         private readonly TableMapper $tables,
         private readonly ListMapper $lists,
         private readonly ImageMapper $images,
+        /** Set when the document has a table of contents. */
+        private readonly ?TocMapper $toc = null,
+        /** Set to give each page its own theme. */
+        private readonly ?PageThemes $themes = null,
     ) {
     }
 
@@ -66,6 +70,11 @@ final class DocxVisitor implements TreeVisitor
     public function enterPage(Page $page, int $index): void
     {
         $this->page = $page;
+        if ($this->themes !== null) {
+            $this->widths->usePage($page);
+            $this->text->usePage($this->themes->theme($page));
+            $this->toc?->usePage($this->themes->styles($page));
+        }
         $this->regions = [];
         $this->floats = [];
     }
@@ -188,7 +197,8 @@ final class DocxVisitor implements TreeVisitor
         $glyph = TextMapper::glyph($node, $style);
         $blocks = match (true) {
             $glyph !== null => [$this->text->glyphParagraph($glyph, $style)],
-            $node instanceof Text => [$this->text->paragraph($node, $style, $at, $this->links === [] ? null : end($this->links), $frame->backdrop)],
+            $node instanceof Text => [$this->text->paragraph($node, $style, $at, $this->links === [] ? null : end($this->links), $frame->backdrop, $this->toc?->bookmark($at->path()))],
+            $node instanceof Toc => $this->toc?->blocks($node, $style, $frame, $at) ?? [],
             $node instanceof PageNumber => [$this->text->pageNumber($node, $style)],
             $node instanceof Spacer => $this->spacer($node, $parent, $at),
             $node instanceof PageBreak => [new DocxPageBreak()],

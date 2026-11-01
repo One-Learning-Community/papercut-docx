@@ -164,7 +164,7 @@ final class RowMapperTest extends TestCase
     public static function awkwardRows(): iterable
     {
         yield 'overflow' => [Row::make(View::make(Text::make('a'))->width(pt(400)), View::make(Text::make('b'))->width(pt(400)))];
-        yield 'zero-width spacer' => [Row::make(Text::make('a'), Spacer::size(pt(0)), Text::make('b'))];
+        yield 'zero-width spacer' => [Row::make(Text::make('a'), Spacer::fixed(pt(0)), Text::make('b'))];
         yield 'gap wider than the row' => [Row::make(Text::make('a')->grow(1), Text::make('b'))->gap(pt(900))];
     }
 

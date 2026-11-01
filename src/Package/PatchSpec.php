@@ -22,6 +22,8 @@ final readonly class PatchSpec
         public ?Numbering $numbering = null,
         /** The fonts the runs name, by written name, for word/fontTable.xml; null where the FontSet does not know the family. */
         public array $fonts = [],
+        /** @var list<TocField> the tables of contents, in the order of their marker paragraphs */
+        public array $tocs = [],
     ) {
     }
 }

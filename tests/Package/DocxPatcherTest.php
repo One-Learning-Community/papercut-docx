@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Papercut\Docx\Tests\Package;
 
 use Papercut\{Column, Document, Page, Text};
-use Papercut\Docx\Package\{DocxPatcher, Numbering, PatchSpec};
+use Papercut\Docx\Package\{DocxPatcher, Numbering, PatchSpec, TocField, TocFieldEntry};
+use Papercut\Export\{ExportOptions, Fidelity, FidelityLevel, FidelityReport};
 use Papercut\Style\ListMarker;
 use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
 use Dskripchenko\PhpDocx\{Document as DocxDocument, Section};
@@ -124,6 +125,27 @@ final class DocxPatcherTest extends TestCase
     private static function withEven(): string
     {
         return self::raw(new Section([new Paragraph([new Run('x')])], evenHeader: [new Paragraph([new Run('e')])]));
+    }
+
+    public function test_a_marker_the_package_lost_drops_the_field_and_says_so(): void
+    {
+        $reports = [];
+        $options = new ExportOptions(onWarning: static function (string $m, ?FidelityReport $r = null) use (&$reports): void {
+            if ($r !== null) {
+                $reports[] = $r;
+            }
+        });
+        $spec = new PatchSpec('Inter', 20, null, new \DateTimeImmutable('2000-01-01'), tocs: [new TocField(1, 3, 9000, true, [
+            new TocFieldEntry('Alpha', '_Toc000000001', 1, 0, 0, 0, 240, '<w:rPr/>'),
+        ])]);
+
+        $bytes = DocxPatcher::patch(self::plain(), $spec, new Fidelity('docx', $options));
+
+        self::assertStringNotContainsString('TOC \\o', self::part($bytes, 'word/document.xml'));
+        self::assertCount(1, $reports);
+        self::assertSame(FidelityLevel::Dropped, $reports[0]->level);
+        self::assertSame('table of contents', $reports[0]->feature);
+        self::assertSame('toc[1]', $reports[0]->path);
     }
 
     public function test_mirror_margins_creates_the_settings_part(): void

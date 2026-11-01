@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Package;
 
+use Papercut\Export\Fidelity;
 use Papercut\Text\{FontClass, FontInfo};
 
 /**
@@ -33,7 +34,7 @@ final class DocxPatcher
         return self::SPACE . $points . '-' . $hex;
     }
 
-    public static function patch(string $bytes, PatchSpec $spec): string
+    public static function patch(string $bytes, PatchSpec $spec, ?Fidelity $fidelity = null): string
     {
         $parts = self::read($bytes);
         foreach ($parts as $name => $xml) {
@@ -71,11 +72,83 @@ final class DocxPatcher
             $parts = self::numbering($parts, $spec->numbering);
         }
 
+        if ($spec->tocs !== []) {
+            $parts = self::tocs($parts, $spec->tocs, $fidelity);
+        }
+
         if ($spec->fonts !== []) {
             $parts = self::fontTable($parts, $spec->fonts);
         }
 
         return DeterministicZip::write($parts, $spec->time);
+    }
+
+    /**
+     * Replaces each table of contents' marker paragraph with the field's paragraphs, the way Word writes a TOC field:
+     * `begin`, the instruction and `separate` in the first entry, `end` in the last, and each entry a link to its
+     * heading's bookmark with the page number as a cached PAGEREF field. The marker's spacing moves to the field.
+     * php-docx writes single-paragraph fields only, and this one spans paragraphs.
+     *
+     * @param array<string, string> $parts
+     * A marker php-docx lost leaves that table of contents out and is reported as dropped.
+     *
+     * @param list<TocField> $tocs
+     * @return array<string, string>
+     */
+    private static function tocs(array $parts, array $tocs, ?Fidelity $fidelity): array
+    {
+        $xml = $parts['word/document.xml'] ?? '';
+        foreach ($tocs as $i => $toc) {
+            $marker = TocField::MARKER . ($i + 1);
+            $xml = (string) preg_replace_callback(
+                '~<w:p>(?:(?!<w:p[ >/]).)*?' . preg_quote($marker, '~') . '</w:t></w:r></w:p>~s',
+                static fn (array $m): string => self::tocParagraphs($toc, $m[0]),
+                $xml,
+                -1,
+                $count,
+            );
+            if ($count !== 1) {
+                $fidelity?->dropped('table of contents', 'toc[' . ($i + 1) . ']');
+            }
+        }
+        $parts['word/document.xml'] = $xml;
+
+        return $parts;
+    }
+
+    private static function tocParagraphs(TocField $toc, string $marker): string
+    {
+        $before = preg_match('~<w:spacing\b[^>]*\bw:before="(\d+)"~', $marker, $b) === 1 ? (int) $b[1] : 0;
+        $after = preg_match('~<w:spacing\b[^>]*\bw:after="(\d+)"~', $marker, $a) === 1 ? (int) $a[1] : 0;
+        $leader = $toc->leaders ? 'dot' : 'none';
+        $last = count($toc->entries) - 1;
+        $out = '';
+        foreach ($toc->entries as $i => $e) {
+            $r = $e->runProperties;
+            $field = static fn (string $inner): string => '<w:r>' . $r . $inner . '</w:r>';
+            $pageref = $field('<w:fldChar w:fldCharType="begin"/>')
+                . $field('<w:instrText xml:space="preserve"> PAGEREF ' . self::attr($e->bookmark) . ' \\h </w:instrText>')
+                . $field('<w:fldChar w:fldCharType="separate"/>')
+                . ($e->page === null ? '' : $field('<w:t>' . $e->page . '</w:t>'))
+                . $field('<w:fldChar w:fldCharType="end"/>');
+            $out .= '<w:p><w:pPr><w:tabs><w:tab w:val="right" w:leader="' . $leader . '" w:pos="' . $toc->tabTwips . '"/></w:tabs>'
+                . '<w:spacing w:before="' . ($e->beforeTwips + ($i === 0 ? $before : 0)) . '" w:after="' . ($e->afterTwips + ($i === $last ? $after : 0))
+                . '" w:line="' . $e->lineTwips . '" w:lineRule="auto"/><w:ind w:left="' . $e->indentTwips . '"/></w:pPr>'
+                . ($i === 0
+                    ? '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+                        . '<w:r><w:instrText xml:space="preserve"> TOC \\o "' . $toc->from . '-' . $toc->to . '" \\h \\z \\u </w:instrText></w:r>'
+                        . '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
+                    : '')
+                . '<w:hyperlink w:anchor="' . self::attr($e->bookmark) . '" w:history="1">'
+                . $field('<w:t xml:space="preserve">' . self::attr($e->text) . '</w:t>')
+                . $field('<w:tab/>')
+                . $pageref
+                . '</w:hyperlink>'
+                . ($i === $last ? '<w:r><w:fldChar w:fldCharType="end"/></w:r>' : '')
+                . '</w:p>';
+        }
+
+        return $out;
     }
 
     /**

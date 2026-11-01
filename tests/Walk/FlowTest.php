@@ -84,7 +84,7 @@ final class FlowTest extends TestCase
 
     public function test_fixed_spacer_is_a_hairline_paragraph(): void
     {
-        $d = self::export(Column::make(Text::make('a'), Spacer::size(pt(12)), Text::make('b')));
+        $d = self::export(Column::make(Text::make('a'), Spacer::fixed(pt(12)), Text::make('b')));
         $hair = self::P . '[2]';
         self::assertSame('238', $d->value("$hair/w:pPr/w:spacing/@w:after"));
         self::assertSame('2', $d->value("$hair/w:pPr/w:spacing/@w:line"));

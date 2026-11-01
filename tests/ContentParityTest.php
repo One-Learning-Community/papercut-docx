@@ -19,6 +19,7 @@ use function Papercut\pt;
  * The words pdftotext finds in the PDF equal the words of the DOCX body, counted with multiplicity (body only).
  * Table header rows repeat on every PDF page and once in Word, so their words are left out of both sides.
  * Checkbox and radio markers are drawn shapes in the PDF and characters in Word, so they are left out too.
+ * A table of contents' dot leaders are dots drawn as text in the PDF and a tab leader in Word, so runs of dots are left out of both sides.
  * List labels are text in the PDF and Word numbering in Word (not in the body text), so they are taken off the PDF side.
  */
 final class ContentParityTest extends TestCase
@@ -183,7 +184,7 @@ final class ContentParityTest extends TestCase
         $words = preg_split('/\s+/u', trim(str_replace('-', '', $text)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $counts = [];
         foreach ($words as $w) {
-            if (!isset($skip[$w])) {
+            if (!isset($skip[$w]) && preg_match('/^\.{4,}$/', $w) !== 1) {
                 $counts[$w] = ($counts[$w] ?? 0) + 1;
             }
         }
