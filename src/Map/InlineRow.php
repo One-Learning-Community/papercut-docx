@@ -25,6 +25,8 @@ use Papercut\Value\Auto;
  * the padding a no-break space on each side inside them. A rounded corner is lost; that is reported. The items' max-content widths plus the
  * gaps must fit the row, so the PDF sets them on one line without squeezing any; otherwise the PDF wraps a long item
  * in its own column, and the row keeps its table. Anything else keeps its table.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class InlineRow
 {

@@ -15,7 +15,11 @@ use Papercut\Style\{ComputedStyle, TextAlign, Theme, WhiteSpace};
 use Papercut\Tree\Visit;
 use Papercut\Value\{Color, Length};
 
-/** Text, spans and page numbers as Word paragraphs and runs. */
+/**
+ * Text, spans and page numbers as Word paragraphs and runs.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class TextMapper
 {
     public function __construct(

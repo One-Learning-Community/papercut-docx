@@ -6,11 +6,14 @@ namespace Papercut\Docx\Package;
 
 use Papercut\Export\Fidelity;
 use Papercut\Text\{FontClass, FontInfo};
+use Papercut\Value\ColumnSpec;
 
 /**
  * Fixes php-docx's output where it can't express what Papercut needs: `left`/`right` alignment
  * (Google Docs ignores `start`/`end`), run shading in any colour, the theme's default font, and the document language.
  * It edits the exact markup php-docx writes and throws when that markup changes, so an upgrade fails loudly.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class DocxPatcher
 {
@@ -21,6 +24,9 @@ final class DocxPatcher
 
     /** Marks a border colour as also carrying the border's space, in points; see spaced(). */
     private const string SPACE = 'papercut-sp';
+
+    /** The text of a run that patch() turns into a column break (`w:br w:type="column"`); see columnBreak(). */
+    public const string COLUMN_BREAK = 'papercut-column-break';
 
     /** A highlight value patch() turns into run shading in $hex (six lower-case hex digits). */
     public static function shading(string $hex): string
@@ -69,6 +75,11 @@ final class DocxPatcher
             }
         }
 
+        if ($spec->columns !== []) {
+            $parts = self::columns($parts, $spec->columns);
+        }
+        $parts = self::columnBreaks($parts, $spec->columnBreaks);
+
         $font = self::attr($spec->fontFamily);
         $lang = $spec->lang === null ? '' : '<w:lang w:val="' . self::attr($spec->lang) . '"/>';
         $parts['word/styles.xml'] = self::replaceOnce(
@@ -96,6 +107,84 @@ final class DocxPatcher
         }
 
         return DeterministicZip::write($parts, $spec->time);
+    }
+
+    /**
+     * The `w:cols` element for a flow's section: equal columns, or each column's width and the space after it when the
+     * widths or the gaps differ. A rule is `w:sep`. Twips are rounded from points.
+     */
+    public static function colsXml(ColumnSpec $spec, float $widthPt): string
+    {
+        $sep = $spec->rule === null ? '' : ' w:sep="1"';
+        $tw = static fn (float $pt): int => (int) round($pt * 20);
+        if ($spec->shares === null && count(array_unique($spec->gaps)) <= 1) {
+            return '<w:cols w:num="' . $spec->count . '" w:space="' . $tw($spec->gaps[0] ?? ColumnSpec::DEFAULT_GAP) . '"' . $sep . '/>';
+        }
+        $cols = '';
+        foreach ($spec->columns($widthPt) as $i => $column) {
+            $cols .= '<w:col w:w="' . $tw($column['width']) . '"' . ($i < $spec->count - 1 ? ' w:space="' . $tw($spec->gaps[$i]) . '"' : '') . '/>';
+        }
+
+        return '<w:cols w:num="' . $spec->count . '" w:equalWidth="0"' . $sep . '>' . $cols . '</w:cols>';
+    }
+
+    /**
+     * Puts each section's `w:cols` right after its `w:pgMar` (schema order: pgMar, ..., cols, ..., titlePg). Sections are
+     * counted in document order: the ones that end in a paragraph's properties, then the body's own.
+     *
+     * @param array<string, string> $parts
+     * @param array<int, string> $columns
+     * @return array<string, string>
+     */
+    private static function columns(array $parts, array $columns): array
+    {
+        $index = -1;
+        $parts['word/document.xml'] = (string) preg_replace_callback(
+            '~<w:sectPr>.*?</w:sectPr>~s',
+            static function (array $m) use (&$index, $columns): string {
+                $index++;
+                if (!isset($columns[$index])) {
+                    return $m[0];
+                }
+                $out = preg_replace('~(<w:pgMar\b[^>]*/>)~', '$1' . str_replace(['\\', '$'], ['\\\\', '\\$'], $columns[$index]), $m[0], 1, $count);
+                if ($out === null || $count !== 1) {
+                    throw new \LogicException('php-docx output changed: section ' . $index . ' properties not found');
+                }
+
+                return $out;
+            },
+            $parts['word/document.xml'] ?? '',
+        );
+        foreach (array_keys($columns) as $wanted) {
+            if ($wanted > $index) {
+                throw new \LogicException('php-docx output changed: section ' . $wanted . ' properties not found');
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Turns the $count runs Flow::columnBreak() wrote into column break runs. Only that run's exact markup counts, so
+     * body text that happens to hold the sentinel is left alone; nothing is touched when $count is 0.
+     *
+     * @param array<string, string> $parts
+     * @return array<string, string>
+     */
+    private static function columnBreaks(array $parts, int $count): array
+    {
+        if ($count === 0) {
+            return $parts;
+        }
+        $run = '<w:r><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr><w:t xml:space="preserve">' . self::COLUMN_BREAK . '</w:t></w:r>';
+        $xml = $parts['word/document.xml'] ?? '';
+        $found = substr_count($xml, $run);
+        if ($found < $count) {
+            throw new \LogicException('php-docx output changed: column break run not found');
+        }
+        $parts['word/document.xml'] = str_replace($run, '<w:r><w:br w:type="column"/></w:r>', $xml);
+
+        return $parts;
     }
 
     /**

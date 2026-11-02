@@ -6,13 +6,13 @@ namespace Papercut\Docx;
 
 use Dskripchenko\PhpDocx\Document as DocxDocument;
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak, Paragraph};
-use Dskripchenko\PhpDocx\Style\{CoreProperties, ParagraphStyle, RunStyle, StyleRegistry};
+use Dskripchenko\PhpDocx\Style\{CoreProperties, ParagraphStyle, RunStyle, SectionStart, StyleRegistry};
 use Papercut\Page;
 use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
+use Papercut\Docx\Map\{BoxMapper, ColumnsMark, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
 use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
@@ -96,7 +96,7 @@ final class DocxExporter implements Exporter
             $themes,
         );
         (new TreeWalker($themes))->walk($doc, $visitor);
-        $sections = $this->sections($visitor);
+        [$sections, $columns] = $this->sections($visitor);
         $first = $visitor->pages()[0]['page'];
 
         $meta = $doc->meta();
@@ -118,7 +118,7 @@ final class DocxExporter implements Exporter
 
         $bytes = DocxPatcher::patch(
             (new Word2007Writer($registry))->write($docx),
-            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? []),
+            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? [], $columns, $visitor->columnBreaks()),
             $fidelity,
         );
 
@@ -167,7 +167,10 @@ final class DocxExporter implements Exporter
     /**
      * One section per run of pages that look alike: the same page setup, header, footer and layer pictures.
      *
-     * @return non-empty-list<Section>
+     * A page's flows split its body at their marks: each flow is a continuous section with its columns, and what follows
+     * is a continuous one-column section (a hairline alone when nothing does, which levels the columns).
+     *
+     * @return array{non-empty-list<Section>, array<int, string>} the sections, and each flow section's `w:cols` XML by index
      */
     private function sections(DocxVisitor $visitor): array
     {
@@ -190,48 +193,104 @@ final class DocxExporter implements Exporter
         }
 
         $sections = [];
+        $columns = [];
         foreach ($groups as $g => $pages) {
-            $body = $this->body($pages);
+            $segments = self::withoutEmptySegments(self::segments($this->body($pages)));
             if ($g > 0) {
-                $body = self::withoutLeadingBreak($body);
+                $segments[0]['blocks'] = self::withoutLeadingBreak($segments[0]['blocks']);
             }
-            if ($g < count($groups) - 1 && end($body) instanceof PageBreak) {
+            $lastSegment = array_key_last($segments);
+            if ($g < count($groups) - 1 && end($segments[$lastSegment]['blocks']) instanceof PageBreak) {
                 // The next section starts on a new page by itself.
-                array_pop($body);
+                array_pop($segments[$lastSegment]['blocks']);
             }
-            // Word needs a section to end in a paragraph; php-docx's own is default height and can spill onto a new page.
-            if ($body === [] || !end($body) instanceof Paragraph) {
-                $body[] = Flow::hairline();
+            foreach ($segments as $i => $segment) {
+                $body = $segment['blocks'];
+                // Word needs a section to end in a paragraph; php-docx's own is default height and can spill onto a new page.
+                // A column break there would leave the paragraph mark alone in the next column.
+                if ($body === [] || !end($body) instanceof Paragraph || Flow::isColumnBreak(end($body))) {
+                    $body[] = Flow::hairline();
+                }
+                $first = $pages[0];
+                $floats = $first['floats'];
+                $normalHeader = $first['regions']['header'] ?? [];
+                $normalFooter = $first['regions']['footer'] ?? [];
+                $header = self::withFloats($normalHeader, $floats);
+                $footer = $normalFooter;
+                // A section without a header or footer shows the previous section's in Word; an empty one stops that.
+                $previous = $sections[count($sections) - 1] ?? null;
+                if ($previous !== null && $header === [] && $previous->header !== []) {
+                    $header = [Flow::hairline()];
+                }
+                if ($previous !== null && $footer === [] && $previous->footer !== []) {
+                    $footer = [Flow::hairline()];
+                }
+                // A variant that is set gives its blocks, or a hairline when set empty, except that a header part with floats needs none. An unset one copies the normal part.
+                [$fh, $ff, $eh, $ef] = [[], [], [], []];
+                $page = $first['page'];
+                // Only the section that starts the page can show the first-page parts.
+                if ($i === 0 && self::setsFirst($page)) {
+                    $fh = self::variant($page->firstHeaderNodes() !== null, $first, 'first-header', $normalHeader, true, $floats);
+                    $ff = self::variant($page->firstFooterNodes() !== null, $first, 'first-footer', $normalFooter, false, $floats);
+                }
+                if ($anyEven) {
+                    $eh = self::variant($page->evenHeaderNodes() !== null, $first, 'even-header', $normalHeader, true, $floats);
+                    $ef = self::variant($page->evenFooterNodes() !== null, $first, 'even-footer', $normalFooter, false, $floats);
+                }
+                if ($segment['cols'] !== null) {
+                    $columns[count($sections)] = $segment['cols'];
+                }
+                $sections[] = new Section($body, $header, $footer, PageSetupMapper::setup($page), $fh, $ff, $eh, $ef, $i === 0 ? SectionStart::NextPage : SectionStart::Continuous);
             }
-            $first = $pages[0];
-            $floats = $first['floats'];
-            $normalHeader = $first['regions']['header'] ?? [];
-            $normalFooter = $first['regions']['footer'] ?? [];
-            $header = self::withFloats($normalHeader, $floats);
-            $footer = $normalFooter;
-            // A section without a header or footer shows the previous section's in Word; an empty one stops that.
-            $previous = $sections[$g - 1] ?? null;
-            if ($previous !== null && $header === [] && $previous->header !== []) {
-                $header = [Flow::hairline()];
-            }
-            if ($previous !== null && $footer === [] && $previous->footer !== []) {
-                $footer = [Flow::hairline()];
-            }
-            // A variant that is set gives its blocks, or a hairline when set empty, except that a header part with floats needs none. An unset one copies the normal part.
-            [$fh, $ff, $eh, $ef] = [[], [], [], []];
-            $page = $first['page'];
-            if (self::setsFirst($page)) {
-                $fh = self::variant($page->firstHeaderNodes() !== null, $first, 'first-header', $normalHeader, true, $floats);
-                $ff = self::variant($page->firstFooterNodes() !== null, $first, 'first-footer', $normalFooter, false, $floats);
-            }
-            if ($anyEven) {
-                $eh = self::variant($page->evenHeaderNodes() !== null, $first, 'even-header', $normalHeader, true, $floats);
-                $ef = self::variant($page->evenFooterNodes() !== null, $first, 'even-footer', $normalFooter, false, $floats);
-            }
-            $sections[] = new Section($body, $header, $footer, PageSetupMapper::setup($page), $fh, $ff, $eh, $ef);
         }
 
-        return $sections;
+        return [$sections, $columns];
+    }
+
+    /**
+     * Drops the segments with nothing in them: the one before a flow that starts the body, and the one between two flows.
+     * The one after a flow that ends the body stays, as the hairline that levels the flow's columns, and so does a
+     * body's only segment.
+     *
+     * @param non-empty-list<array{blocks: list<BlockElement>, cols: ?string}> $segments
+     * @return non-empty-list<array{blocks: list<BlockElement>, cols: ?string}>
+     */
+    private static function withoutEmptySegments(array $segments): array
+    {
+        $last = array_key_last($segments);
+        $kept = [];
+        foreach ($segments as $i => $segment) {
+            $levels = $i === $last && $i > 0 && $segments[$i - 1]['cols'] !== null;
+            if ($segment['blocks'] !== [] || $segment['cols'] !== null || $levels) {
+                $kept[] = $segment;
+            }
+        }
+
+        return $kept === [] ? [$segments[0]] : $kept;
+    }
+
+    /**
+     * A body cut at its column marks: the blocks before a flow, the flow's own with its `w:cols`, and the blocks after it.
+     *
+     * @param list<BlockElement> $body
+     * @return non-empty-list<array{blocks: list<BlockElement>, cols: ?string}>
+     */
+    private static function segments(array $body): array
+    {
+        $segments = [];
+        $blocks = [];
+        $cols = null;
+        foreach ($body as $block) {
+            if (!$block instanceof ColumnsMark) {
+                $blocks[] = $block;
+                continue;
+            }
+            $segments[] = ['blocks' => $blocks, 'cols' => $cols];
+            [$blocks, $cols] = [[], $block->cols];
+        }
+        $segments[] = ['blocks' => $blocks, 'cols' => $cols];
+
+        return $segments;
     }
 
     /**

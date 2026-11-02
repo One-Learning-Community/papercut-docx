@@ -6,10 +6,15 @@ namespace Papercut\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, PageBreak, Paragraph, Run, Table, TableCell, TableRow};
 use Dskripchenko\PhpDocx\Style\{ParagraphStyle, RunStyle};
+use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Docx\Walk\Frame;
 use Papercut\Style\ComputedStyle;
 
-/** A column's children as a run of blocks: gap and vertical margins as paragraph spacing, pagination as flags. */
+/**
+ * A column's children as a run of blocks: gap and vertical margins as paragraph spacing, pagination as flags.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class Flow
 {
     /** A hairline paragraph's exact line height in twips; its space after is the requested space less this. */
@@ -26,7 +31,8 @@ final class Flow
             $blocks = $item['blocks'];
             $s = $item['style'];
             $before = $s?->margin->top->points ?? 0.0;
-            $after = ($s?->margin->bottom->points ?? 0.0) + ($i < $count - 1 ? $gap : 0.0);
+            // The gap after a column break would land at the top of the next column, where nothing else has one.
+            $after = ($s?->margin->bottom->points ?? 0.0) + ($i < $count - 1 && !self::isColumnBreak(end($blocks)) ? $gap : 0.0);
             if ($s !== null) {
                 $blocks = self::pagination($blocks, $s, $settled);
             }
@@ -140,6 +146,22 @@ final class Flow
         self::$hairlines[$p] = true;
 
         return $p;
+    }
+
+    /**
+     * A paragraph that ends the column: it holds only the text DocxPatcher turns into a column break, and takes no room
+     * (the paragraph mark lands at the top of the next column).
+     */
+    public static function columnBreak(): Paragraph
+    {
+        return new Paragraph([new Run(DocxPatcher::COLUMN_BREAK, new RunStyle(sizeHalfPoints: 2))], self::hairline()->style);
+    }
+
+    public static function isColumnBreak(BlockElement|false $block): bool
+    {
+        $run = $block instanceof Paragraph ? ($block->children[0] ?? null) : null;
+
+        return $run instanceof Run && $run->text === DocxPatcher::COLUMN_BREAK;
     }
 
     /** @var ?\WeakMap<Paragraph, true> paragraphs made by hairline(), and their copies */

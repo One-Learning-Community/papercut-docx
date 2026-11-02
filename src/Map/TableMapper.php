@@ -14,7 +14,11 @@ use Papercut\Style\{ComputedStyle, Justify};
 use Papercut\TableCell;
 use Papercut\Value\{Auto, Fr, Length, Percent};
 
-/** Papercut tables as Word tables at WidthResolver's column widths. */
+/**
+ * Papercut tables as Word tables at WidthResolver's column widths.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class TableMapper
 {
     public function __construct(

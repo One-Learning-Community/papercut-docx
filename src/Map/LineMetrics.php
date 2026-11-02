@@ -10,6 +10,8 @@ use Papercut\Text\{FontSet, TrueTypeTables};
  * A font's natural line height as a share of its size (hhea ascender - descender + lineGap over
  * unitsPerEm). Word, LibreOffice and Google Docs all take "single" spacing from it, so a Papercut
  * line height L becomes the multiple L / natural, which every reader can honour (Google Docs has no exact rule).
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class LineMetrics
 {

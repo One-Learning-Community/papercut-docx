@@ -12,7 +12,11 @@ use Papercut\Export\Fidelity;
 use Papercut\Style\{BorderStyle, ComputedStyle, Justify};
 use Papercut\Value\{Auto, Edges, Length};
 
-/** Boxes with padding, a border or a background, as single-cell tables. */
+/**
+ * Boxes with padding, a border or a background, as single-cell tables.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class BoxMapper
 {
     public function __construct(private readonly Fidelity $fidelity)

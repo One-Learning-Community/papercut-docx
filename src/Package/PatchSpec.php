@@ -6,7 +6,11 @@ namespace Papercut\Docx\Package;
 
 use Papercut\Text\FontInfo;
 
-/** What DocxPatcher writes into php-docx's output. */
+/**
+ * What DocxPatcher writes into php-docx's output.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final readonly class PatchSpec
 {
     /** @param array<string, ?FontInfo> $fonts */
@@ -24,6 +28,10 @@ final readonly class PatchSpec
         public array $fonts = [],
         /** @var list<TocField> the tables of contents, in the order of their marker paragraphs */
         public array $tocs = [],
+        /** @var array<int, string> `w:cols` XML by section index, in document order; DocxPatcher writes it after the section's `w:pgMar` */
+        public array $columns = [],
+        /** How many column break runs (Flow::columnBreak()) the body holds; DocxPatcher turns exactly that many into breaks. */
+        public int $columnBreaks = 0,
     ) {
     }
 }

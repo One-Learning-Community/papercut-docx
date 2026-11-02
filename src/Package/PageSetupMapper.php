@@ -8,7 +8,11 @@ use Dskripchenko\PhpDocx\Style\{Orientation, PageSetup, PaperSize};
 use Papercut\Docx\Map\Units;
 use Papercut\Page;
 
-/** A Papercut page as Word's section setup, at its exact size. The paper name is kept when one matches. */
+/**
+ * A Papercut page as Word's section setup, at its exact size. The paper name is kept when one matches.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class PageSetupMapper
 {
     /** Points per paper size, portrait. */

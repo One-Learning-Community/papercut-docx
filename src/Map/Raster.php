@@ -15,6 +15,8 @@ use Papercut\Vector\SvgDocument;
  * Pictures for Word, which takes only PNG, JPEG, GIF and BMP and draws them as they are: other formats are
  * converted, and what the PDF does to an image (cropping, opacity), along with QR codes
  * and SVG, is baked into the pixels. GD does the bitmap work; Imagick draws styled QR codes and SVG.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final readonly class Raster
 {

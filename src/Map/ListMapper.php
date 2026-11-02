@@ -14,6 +14,8 @@ use Papercut\Style\ListMarker;
 /**
  * List items as real Word numbering: the first paragraph of an item carries a reserved style id that DocxPatcher turns
  * into `w:numPr`, and Word draws the label and the hanging indent. A list with no marker only indents.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class ListMapper
 {

@@ -6,7 +6,11 @@ namespace Papercut\Docx\Map;
 
 use Papercut\Text\{FontInfo, FontSet};
 
-/** The font names the export writes into runs, and what the font table needs to say about each. */
+/**
+ * The font names the export writes into runs, and what the font table needs to say about each.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class WordFonts
 {
     /** @var array<string, ?FontInfo> written name => what the font file says, null for a family the FontSet does not know */

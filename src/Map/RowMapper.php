@@ -17,6 +17,8 @@ use Papercut\Value\Length;
  *
  * @phpstan-type Item array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool}
  * @phpstan-type Segment array{x0: float, x1: float, item: ?Item, pad: array{float, float}, free: float}
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class RowMapper
 {

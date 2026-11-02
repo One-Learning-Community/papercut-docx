@@ -10,6 +10,8 @@ use Papercut\Value\Color;
 /**
  * Opacity, which the PDF applies to each thing a faded node draws: Word has none, so each colour is blended
  * onto what lies beneath it (the nearest fill, else white) and written opaque.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class Fade
 {

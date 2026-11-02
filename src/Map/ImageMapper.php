@@ -17,6 +17,8 @@ use function Papercut\mm;
 /**
  * Images, QR codes and SVG as inline pictures at the size the PDF gives them. What the PDF does to a
  * picture (cover cropping, opacity) is drawn into it; see Raster.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class ImageMapper
 {

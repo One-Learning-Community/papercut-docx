@@ -9,6 +9,8 @@ use Dskripchenko\PhpDocx\Element\BlockElement;
 /**
  * The blocks a list item has already indented, kept for one export. A copy of a block (spacing, pagination)
  * is as settled as the original, so whatever copies blocks carries the mark across.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class Settled
 {

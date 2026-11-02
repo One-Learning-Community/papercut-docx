@@ -7,6 +7,8 @@ namespace Papercut\Docx\Package;
 /**
  * A minimal ZIP writer whose bytes depend only on its input: every entry is deflated at one level and
  * stamped with one time, read as UTC (libzip converts times through the process's local time zone).
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class DeterministicZip
 {

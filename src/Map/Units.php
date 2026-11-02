@@ -6,7 +6,11 @@ namespace Papercut\Docx\Map;
 
 use Papercut\Value\Color;
 
-/** Point conversions for WordprocessingML. */
+/**
+ * Point conversions for WordprocessingML.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class Units
 {
     /** Twentieths of a point. */

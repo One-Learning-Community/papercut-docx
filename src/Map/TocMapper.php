@@ -16,6 +16,8 @@ use Papercut\Tree\Visit;
 /**
  * Tables of contents as Word sees them: the title as a paragraph, and a marker paragraph that DocxPatcher turns into the
  * TOC field, pre-filled from the PDF layout's page numbers. Headings that are entries get a `_Toc` bookmark to link to.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
 final class TocMapper
 {

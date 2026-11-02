@@ -10,7 +10,11 @@ use Papercut\Node;
 use Papercut\Style\ComputedStyle;
 use Papercut\Value\Color;
 
-/** One open node during the walk, collecting what its children produced. */
+/**
+ * One open node during the walk, collecting what its children produced.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class Frame
 {
     /** @var list<array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool}> one entry per child; boxed: the blocks are this child's own decorated box */
@@ -41,6 +45,8 @@ final class Frame
     public bool $header = false;
     /** Whether this node's decorated box is a Word table: lists inside it start again at level 0. */
     public bool $boxCell = false;
+    /** The `w:cols` XML when this node is a column flow that becomes a Word column section; null otherwise. */
+    public ?string $cols = null;
     /** What a faded child lies on: the nearest fill, else white. */
     public Color $backdrop;
 

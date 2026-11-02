@@ -6,7 +6,11 @@ namespace Papercut\Docx\Package;
 
 use Papercut\Style\ListMarker;
 
-/** The numbering of one export: a `w:num` per list, an abstract numbering per marker used. Rendered as word/numbering.xml. */
+/**
+ * The numbering of one export: a `w:num` per list, an abstract numbering per marker used. Rendered as word/numbering.xml.
+ *
+ * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ */
 final class Numbering
 {
     public const string STYLE_PREFIX = 'papercut-num-';
