@@ -62,6 +62,18 @@ final class TocDocxTest extends TestCase
         self::assertSame($ids, $d->values('//w:bookmarkEnd/@w:id'));
     }
 
+    public function test_markup_kept_out_of_the_toc_stays_a_heading_without_an_entry(): void
+    {
+        $d = self::export(Document::make(
+            Page::a4()->body(Toc::make()->levels(1, 2)),
+            Page::a4()->body(Text::h1('Unit 1'), \Papercut\Markup\Markup::html('<h2>Warm-up</h2><p>Read.</p>', new \Papercut\Markup\MarkupOptions(toc: false))),
+        ));
+
+        self::assertSame(['Unit 1'], $d->values('//w:hyperlink/w:r[1]/w:t'));
+        self::assertSame(1, $d->count('//w:p[w:pPr/w:pStyle/@w:val="Heading2"][.//w:t="Warm-up"]'));
+        self::assertSame(0, $d->count('//w:p[.//w:t="Warm-up"]/w:bookmarkStart'));
+    }
+
     public function test_levels_limit_the_field_and_the_bookmarks(): void
     {
         $d = self::export(self::threeSections(Toc::make()->levels(1, 1)));
