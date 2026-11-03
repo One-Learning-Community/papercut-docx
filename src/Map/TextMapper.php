@@ -66,10 +66,7 @@ final class TextMapper
         if ($s->fontWeight !== 400 && $s->fontWeight !== 700) {
             $this->fidelity->approximated('font weight ' . $s->fontWeight, $at->path());
         }
-        $level = match ($t->preset()) {
-            'h1' => 1, 'h2' => 2, 'h3' => 3, 'h4' => 4,
-            default => null,
-        };
+        $level = $t->headingLevel();
 
         if ($bookmark !== null) {
             $children = [new Bookmark($bookmark, $children)];

@@ -74,6 +74,21 @@ final class TocDocxTest extends TestCase
         self::assertSame(0, $d->count('//w:p[.//w:t="Warm-up"]/w:bookmarkStart'));
     }
 
+    public function test_section_and_card_heading_titles_are_word_headings_and_entries(): void
+    {
+        $d = self::export(Document::make(
+            Page::a4()->body(Toc::make()->levels(1, 2)),
+            Page::a4()->body(
+                \Papercut\Decorator\Section::make('one')->title('Units')->number(2)->heading(1),
+                \Papercut\Decorator\Card::make('two')->title('Unit 1')->heading(2),
+            ),
+        ));
+
+        self::assertSame(['2 Units', 'Unit 1'], $d->values('//w:hyperlink/w:r[1]/w:t'));
+        self::assertSame(1, $d->count('//w:p[w:pPr/w:pStyle/@w:val="Heading1"][.//w:t="Units"]'));
+        self::assertSame(1, $d->count('//w:p[w:pPr/w:pStyle/@w:val="Heading2"][.//w:t="Unit 1"]'));
+    }
+
     public function test_levels_limit_the_field_and_the_bookmarks(): void
     {
         $d = self::export(self::threeSections(Toc::make()->levels(1, 1)));
