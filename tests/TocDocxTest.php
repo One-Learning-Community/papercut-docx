@@ -222,6 +222,24 @@ final class TocDocxTest extends TestCase
         self::assertSame(2, $d->count('//w:hyperlink//w:fldChar'.'[@w:fldCharType="separate" or @w:fldCharType="end"]'));
     }
 
+    public function test_page_numbers_off_skips_the_layout_and_writes_the_field_without_them(): void
+    {
+        $before = DocxExporter::$layoutPasses;
+        $d = self::export(self::threeSections(Toc::make()->levels(1, 2)), new \Papercut\Docx\DocxOptions(tocPageNumbers: false));
+        self::assertSame($before, DocxExporter::$layoutPasses);
+
+        self::assertSame(['Alpha', 'Beta', 'Beta sub', 'Gamma'], $d->values('//w:hyperlink/w:r[1]/w:t'));
+        self::assertSame(0, $d->count('//w:hyperlink//w:r[preceding-sibling::w:r[w:fldChar/@w:fldCharType="separate"]][w:t]'));
+        self::assertSame(4, preg_match_all('~PAGEREF _Toc~', $d->part('word/document.xml')));
+    }
+
+    public function test_docx_options_keep_their_setting_through_from(): void
+    {
+        $off = new \Papercut\Docx\DocxOptions(tocPageNumbers: false);
+        self::assertFalse(\Papercut\Docx\DocxOptions::from($off)->tocPageNumbers);
+        self::assertTrue(\Papercut\Docx\DocxOptions::from(new ExportOptions())->tocPageNumbers);
+    }
+
     public function test_a_document_without_one_never_lays_out_pages(): void
     {
         $before = DocxExporter::$layoutPasses;

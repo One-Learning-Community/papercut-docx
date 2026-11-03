@@ -81,7 +81,7 @@ final class DocxExporter implements Exporter
         $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $themes->document());
         $index = TocIndex::collect($doc, $themes);
         $widths = WidthResolver::for($options, 'docx', $index, $themes);
-        $toc = $index->hasToc() ? new TocMapper($index, self::anchorPages($doc, $options, $index, $themes), $styles, $text, $fonts) : null;
+        $toc = $index->hasToc() ? new TocMapper($index, $options->tocPageNumbers ? self::anchorPages($doc, $options, $index, $themes) : [], $styles, $text, $fonts) : null;
         $visitor = new DocxVisitor(
             $fidelity,
             $widths,
@@ -150,6 +150,7 @@ final class DocxExporter implements Exporter
             );
             $ctx->themes = $themes;
             $ctx->toc = $index;
+            $ctx->measureOnly = true;
 
             return Painter::anchorPages((new Paginator(new LayoutEngine($ctx), $ctx))->paginate($doc));
         } catch (\Throwable) {
