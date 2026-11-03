@@ -240,6 +240,17 @@ final class TocDocxTest extends TestCase
         self::assertTrue(\Papercut\Docx\DocxOptions::from(new ExportOptions())->tocPageNumbers);
     }
 
+    public function test_the_page_layout_stops_after_the_last_listed_heading(): void
+    {
+        // Twenty pages of text after the last h1: the layout stops on page 4, where Gamma is.
+        $tail = array_map(static fn (int $i): Page => Page::a4()->body(Text::make(str_repeat("Filler $i. ", 400))), range(1, 20));
+        $doc = Document::make(...[...self::threeSections(Toc::make()->levels(1, 1))->pages(), ...$tail]);
+        $d = self::export($doc);
+
+        self::assertSame(['2', '3', '4'], $d->values('//w:hyperlink//w:r[preceding-sibling::w:r[w:fldChar/@w:fldCharType="separate"]][w:t]/w:t'));
+        self::assertSame(4, DocxExporter::$pagesLaidOut);
+    }
+
     public function test_a_document_without_one_never_lays_out_pages(): void
     {
         $before = DocxExporter::$layoutPasses;

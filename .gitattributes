@@ -3,3 +3,4 @@
 /phpstan.neon export-ignore
 /phpunit.xml.dist export-ignore
 /tests export-ignore
+/bench export-ignore

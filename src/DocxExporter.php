@@ -16,7 +16,7 @@ use Papercut\Docx\Map\{BoxMapper, ColumnsMark, Flow, ImageMapper, LineMetrics, I
 use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
-use Papercut\Layout\{LayoutContext, LayoutEngine, Paginator};
+use Papercut\Layout\{LayoutContext, LayoutEngine, Paginator, PlacedPage};
 use Papercut\OverflowMode;
 use Papercut\Paint\Painter;
 use Papercut\Text\FontRegistry;
@@ -33,6 +33,8 @@ final class DocxExporter implements Exporter
 {
     /** @internal How many times the hidden page layout for a table of contents has started; tests read it. */
     public static int $layoutPasses = 0;
+    /** @internal How many pages the last of those layouts laid out before it had every heading's page; tests read it. */
+    public static int $pagesLaidOut = 0;
 
     public const string MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -152,7 +154,22 @@ final class DocxExporter implements Exporter
             $ctx->toc = $index;
             $ctx->measureOnly = true;
 
-            return Painter::anchorPages((new Paginator(new LayoutEngine($ctx), $ctx))->paginate($doc));
+            // Only each heading's page is kept as the pages are laid out, and layout stops once every listed heading has one.
+            $wanted = count($index->entries(1, 4));
+            $found = [];
+            self::$pagesLaidOut = 0;
+            try {
+                (new Paginator(new LayoutEngine($ctx), $ctx))->paginate($doc, static function (PlacedPage $page, int $number) use (&$found, $wanted): null {
+                    self::$pagesLaidOut = $number;
+                    $found += Painter::anchorsOn($page, $number);
+                    if (count($found) >= $wanted) {
+                        throw new AllHeadingsPlaced();
+                    }
+                    return null;
+                });
+            } catch (AllHeadingsPlaced) {
+            }
+            return $found;
         } catch (\Throwable) {
             // Word export must never fail for want of page numbers: the field is written without them.
             return [];
