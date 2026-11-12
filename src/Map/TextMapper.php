@@ -11,7 +11,7 @@ use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Exception\InvalidValue;
 use Papercut\Export\Fidelity;
 use Papercut\Paint\Link;
-use Papercut\Style\{ComputedStyle, TextAlign, Theme, WhiteSpace};
+use Papercut\Style\{ComputedStyle, StyleResolver, TextAlign, Theme, WhiteSpace};
 use Papercut\Tree\Visit;
 use Papercut\Value\{Color, Length};
 
@@ -30,10 +30,14 @@ final class TextMapper
     ) {
     }
 
-    /** Maps spans with the page's theme from here on. */
-    public function usePage(Theme $theme): void
+    /** The theme's resolver, which computes each distinct span style once; null until usePage(), and then every span computes its own. */
+    private ?StyleResolver $styles = null;
+
+    /** Maps spans with the page's theme, and its resolver, from here on. */
+    public function usePage(Theme $theme, ?StyleResolver $styles = null): void
     {
         $this->theme = $theme;
+        $this->styles = $styles;
     }
 
     /** @param ?string $blockHref the enclosing block link, applied to runs without a link of their own */
@@ -47,7 +51,7 @@ final class TextMapper
         foreach ($t->spanList() as $span) {
             // A span's own colours fade with the text; inherited ones already have.
             $own = ($this->theme ?? Theme::default())->spanStyle($span);
-            $cs = $s->child($own);
+            $cs = $this->styles?->span($s, $own) ?? $s->child($own);
             $spanBg = Fade::over($own->background, $s->opacity, $backdrop);
             $rs = $this->runStyle($own->color === null ? $cs : new ComputedStyle(...[...get_object_vars($cs), 'color' => Fade::over($cs->color, $s->opacity, $spanBg ?? $backdrop) ?? $cs->color]));
             $bg = Units::fill($spanBg);

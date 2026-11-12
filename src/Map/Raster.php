@@ -153,7 +153,7 @@ final readonly class Raster
             return null;
         }
 
-        return BaconQrSvg::png($qr->modules(), $qr->quietZoneModules(), $qr->level(), $design, $color, max(1, $pixels));
+        return PngTimestamps::strip(BaconQrSvg::png($qr->modules(), $qr->quietZoneModules(), $qr->level(), $design, $color, max(1, $pixels)));
     }
 
     /**
@@ -190,7 +190,7 @@ final readonly class Raster
             return null;
         }
 
-        return $png === '' ? null : $png;
+        return $png === '' ? null : PngTimestamps::strip($png);
     }
 
     /** The SVG with nothing external left in it, sized $width x $height px around its view box. */

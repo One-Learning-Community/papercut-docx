@@ -154,4 +154,39 @@ final class RasterTest extends TestCase
         $doc = SvgDocument::parse('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>');
         self::assertNull(self::gdOnly()->svg($doc, 4, 4));
     }
+
+    /** @return list<string> chunk types, with each tEXt chunk's keyword */
+    private static function chunks(string $png): array
+    {
+        $types = [];
+        for ($i = 8; $i + 8 <= strlen($png); $i += 12 + $length) {
+            $length = (ord($png[$i]) << 24) | (ord($png[$i + 1]) << 16) | (ord($png[$i + 2]) << 8) | ord($png[$i + 3]);
+            $type = substr($png, $i + 4, 4);
+            $types[] = $type === 'tEXt' ? 'tEXt:' . strstr(substr($png, $i + 8, $length), "\0", true) : $type;
+        }
+
+        return $types;
+    }
+
+    #[RequiresPhpExtension('imagick')]
+    public function test_imagick_pictures_carry_no_time_of_drawing(): void
+    {
+        $raster = Raster::detect();
+        $pictures = [];
+        if ($raster->imagickSvg) {
+            $pictures['svg'] = $raster->svg(SvgDocument::parse('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#ff0000"/></svg>'), 20, 20);
+        }
+        if (class_exists(\BaconQrCode\Renderer\ImageRenderer::class)) {
+            $pictures['styled qr'] = $raster->styledQr(QrCode::make('x')->eyes('dot'), Color::hex('#112233'), 200);
+        }
+        if ($pictures === []) {
+            self::markTestSkipped('This Imagick build draws neither SVG nor styled QR codes.');
+        }
+        foreach ($pictures as $what => $png) {
+            self::assertNotNull($png, $what);
+            $chunks = self::chunks($png);
+            self::assertNotContains('tIME', $chunks, $what);
+            self::assertSame([], array_values(array_filter($chunks, static fn (string $c): bool => str_starts_with($c, 'tEXt:date:'))), $what);
+        }
+    }
 }

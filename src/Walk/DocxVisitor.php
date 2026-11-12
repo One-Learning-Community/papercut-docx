@@ -83,7 +83,7 @@ final class DocxVisitor implements TreeVisitor
         $this->page = $page;
         if ($this->themes !== null) {
             $this->widths->usePage($page);
-            $this->text->usePage($this->themes->theme($page));
+            $this->text->usePage($this->themes->theme($page), $this->themes->styles($page));
             $this->toc?->usePage($this->themes->styles($page));
         }
         $this->regions = [];
