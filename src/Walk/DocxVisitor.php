@@ -6,8 +6,8 @@ namespace Papercut\Docx\Walk;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, HorizontalAnchor, ImagePosition, ParagraphStyle, VerticalAnchor};
-use Papercut\{ColumnBreak, Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
-use Papercut\Docx\Map\{BadgeRun, BoxMapper, ColumnsMark, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
+use Papercut\{ColumnBreak, Equation, Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
+use Papercut\Docx\Map\{BadgeRun, BoxMapper, ColumnsMark, EquationMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
 use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Export\Fidelity;
 use Papercut\Layout\ColumnFlowLayouter;
@@ -63,6 +63,8 @@ final class DocxVisitor implements TreeVisitor
         private readonly ?TocMapper $toc = null,
         /** Set to give each page its own theme. */
         private readonly ?PageThemes $themes = null,
+        /** Collects the equations' OMML for the patcher. */
+        private readonly EquationMapper $equations = new EquationMapper(),
     ) {
     }
 
@@ -70,6 +72,12 @@ final class DocxVisitor implements TreeVisitor
     public function columnBreaks(): int
     {
         return $this->columnBreaks;
+    }
+
+    /** @return array<int, string> the OMML of the equations the walk wrote, by marker id */
+    public function maths(): array
+    {
+        return $this->equations->maths();
     }
 
     /** @return list<array{page: Page, regions: array<string, list<BlockElement>>, floats: list<DocxImage>}> */
@@ -185,7 +193,7 @@ final class DocxVisitor implements TreeVisitor
         // Leaves produce their blocks in leave(); containers wait for their children.
         return !($node instanceof Text || $node instanceof Spacer || $node instanceof PageBreak || $node instanceof PageNumber
             || $node instanceof Image || $node instanceof QrCode || $node instanceof Svg || $node instanceof PdfPage || $node instanceof Place
-            || $node instanceof ColumnBreak);
+            || $node instanceof ColumnBreak || $node instanceof Equation);
     }
 
     public function leave(Node $node, ComputedStyle $style, Visit $at): void
@@ -224,6 +232,7 @@ final class DocxVisitor implements TreeVisitor
             $node instanceof Image => $this->images->image($node, $style, $frame, $at->path()),
             $node instanceof QrCode => $this->images->qr($node, $style, $frame, $at->path()),
             $node instanceof Svg => $this->images->svg($node, $style, $frame, $at->path()),
+            $node instanceof Equation => [$this->equations->paragraph($node, $style)],
             $node instanceof PdfPage, $node instanceof Place => $this->drop($node, $at),
             $node instanceof ListNode => $this->leaveList($frame),
             $node instanceof ListItem => $this->lists->item(Flow::blocks($frame, $this->lists->settled()), $at->path()),

@@ -32,6 +32,29 @@ final readonly class PatchSpec
         public array $columns = [],
         /** How many column break runs (Flow::columnBreak()) the body holds; DocxPatcher turns exactly that many into breaks. */
         public int $columnBreaks = 0,
+        /** @var array<int, string> OMML by equation id; DocxPatcher swaps each `DocxPatcher::MATH . id` marker run for its markup */
+        public array $maths = [],
+        /** @var array<int, true> ids of the equations in `$maths` that sit among runs of a line; the rest are blocks that must fill their paragraph */
+        public array $inlineMaths = [],
     ) {
+    }
+
+    /** A copy that also carries equation $id's OMML (`m:oMathPara` or `m:oMath`, without namespace declarations). */
+    public function withMath(int $id, string $omml, bool $inline = false): self
+    {
+        return new self(
+            $this->fontFamily,
+            $this->fontSizeHalfPoints,
+            $this->lang,
+            $this->time,
+            $this->mirrorMargins,
+            $this->numbering,
+            $this->fonts,
+            $this->tocs,
+            $this->columns,
+            $this->columnBreaks,
+            array_replace($this->maths, [$id => $omml]),
+            $inline ? array_replace($this->inlineMaths, [$id => true]) : $this->inlineMaths,
+        );
     }
 }

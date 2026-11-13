@@ -20,6 +20,7 @@ use function Papercut\pt;
  * Table header rows repeat on every PDF page and once in Word, so their words are left out of both sides.
  * Checkbox and radio markers are drawn shapes in the PDF and characters in Word, so they are left out too.
  * A table of contents' dot leaders are dots drawn as text in the PDF and a tab leader in Word, so runs of dots are left out of both sides.
+ * Equations are dropped from both sides (the PDF sets their letters as mathematical italics, and Word holds them in `m:t`); the text around them stays compared.
  * List labels are text in the PDF and Word numbering in Word (not in the body text), so they are taken off the PDF side.
  */
 final class ContentParityTest extends TestCase
@@ -44,7 +45,8 @@ final class ContentParityTest extends TestCase
     public function test_pdf_and_docx_have_the_same_word_multisets(string $file): void
     {
         $source = Documents::load($file);
-        $pages = array_map(static fn (Page $p): Page => Page::size(pt($p->width()), pt($p->height()))->margin($p->margins())->body(...$p->bodyNodes()), $source->pages());
+        self::assertStringNotContainsString('papercut-math', DocxInspector::of($source->export(new DocxExporter())->bytes())->part('word/document.xml'));
+        $pages = array_map(static fn (Page $p): Page => Page::size(pt($p->width()), pt($p->height()))->margin($p->margins())->body(...self::withoutEquations($p->bodyNodes())), $source->pages());
         $document = Document::make(...$pages);
 
         $skip = $this->headerWords($document) + array_fill_keys(self::MARKERS, true);
@@ -191,5 +193,70 @@ final class ContentParityTest extends TestCase
         ksort($counts, SORT_STRING);
 
         return $counts;
+    }
+
+    /**
+     * The nodes without any equation: a block Equation is dropped and an inline one's span is cut out of its text (the text around it
+     * stays). The PDF sets a formula's letters as mathematical italics and the other formats hold them as math, so formula words
+     * are not comparable. This helper exists in the core package's tests too: the two packages share no test code.
+     *
+     * @param list<\Papercut\Node|\Papercut\Component> $nodes
+     * @return list<\Papercut\Node|\Papercut\Component>
+     */
+    private static function withoutEquations(array $nodes): array
+    {
+        $out = [];
+        foreach ($nodes as $n) {
+            if ($n instanceof \Papercut\Equation) {
+                continue;
+            }
+            $out[] = self::withoutInlineMath($n);
+        }
+
+        return $out;
+    }
+
+    private static function withoutInlineMath(\Papercut\Node|\Papercut\Component $n): \Papercut\Node|\Papercut\Component
+    {
+        if ($n instanceof \Papercut\Text) {
+            $spans = array_values(array_filter($n->spanList(), static fn (\Papercut\Span $s): bool => $s->math === null));
+
+            return count($spans) === count($n->spanList()) ? $n : self::with($n, 'spans', $spans);
+        }
+        if ($n instanceof \Papercut\Table) {
+            $n = self::with($n, 'headerRows', array_map(self::row(...), $n->headerRows()));
+
+            return self::with($n, 'bodyRows', array_map(self::row(...), $n->bodyRows()));
+        }
+        if ($n instanceof \Papercut\View) {
+            return $n->withChildren(...self::withoutEquations($n->children()));
+        }
+
+        return $n;
+    }
+
+    private static function row(\Papercut\TableRow $row): \Papercut\TableRow
+    {
+        return self::with($row, 'cells', array_map(
+            static fn (\Papercut\TableCell $c): \Papercut\TableCell => self::with($c, 'children', self::withoutEquations($c->children())),
+            $row->cells(),
+        ));
+    }
+
+    /**
+     * A copy of $o with its private property $prop set (these nodes have no setter for their own children).
+     *
+     * @template T of object
+     * @param T $o
+     * @return T
+     */
+    private static function with(object $o, string $prop, mixed $value): object
+    {
+        $clone = clone $o;
+        \Closure::bind(function () use ($prop, $value): void {
+            $this->$prop = $value;
+        }, $clone, $o::class)();
+
+        return $clone;
     }
 }

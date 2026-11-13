@@ -50,7 +50,7 @@ final class InlineRow
         foreach ($frame->items as $item) {
             $p = $item['blocks'][0] ?? null;
             if ($item['boxed'] || count($item['blocks']) !== 1 || !$p instanceof Paragraph || !$item['style'] instanceof ComputedStyle
-                || !self::inline($item['style']) || !self::runsOnly($p->children)) {
+                || !self::inline($item['style']) || !self::runsOnly($p->children) || EquationMapper::isMarker($p)) {
                 return null;
             }
             $parts[] = [$p, $item['style']];

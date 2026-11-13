@@ -12,7 +12,7 @@ use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, ColumnsMark, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
+use Papercut\Docx\Map\{BoxMapper, ColumnsMark, EquationMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
 use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
@@ -80,7 +80,8 @@ final class DocxExporter implements Exporter
         $root = $styles->root();
         $fonts = new WordFonts($options->fonts());
         $fonts->name($root->fontFamily);
-        $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $themes->document());
+        $equations = new EquationMapper();
+        $text = new TextMapper(new LineMetrics($options->fonts()), $fidelity, $fonts, $themes->document(), $equations);
         $index = TocIndex::collect($doc, $themes);
         $widths = WidthResolver::for($options, 'docx', $index, $themes);
         $toc = $index->hasToc() ? new TocMapper($index, $options->tocPageNumbers ? self::anchorPages($doc, $options, $index, $themes) : [], $styles, $text, $fonts) : null;
@@ -96,6 +97,7 @@ final class DocxExporter implements Exporter
             new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect()),
             $toc,
             $themes,
+            $equations,
         );
         (new TreeWalker($themes))->walk($doc, $visitor);
         [$sections, $columns] = $this->sections($visitor);
@@ -118,11 +120,12 @@ final class DocxExporter implements Exporter
             $registry->heading($level, new RunStyle(), new ParagraphStyle());
         }
 
-        $bytes = DocxPatcher::patch(
-            (new Word2007Writer($registry))->write($docx),
-            new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? [], $columns, $visitor->columnBreaks()),
-            $fidelity,
-        );
+        $spec = new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? [], $columns, $visitor->columnBreaks());
+        $inlineMaths = $equations->inlineIds();
+        foreach ($visitor->maths() as $id => $omml) {
+            $spec = $spec->withMath($id, $omml, isset($inlineMaths[$id]));
+        }
+        $bytes = DocxPatcher::patch((new Word2007Writer($registry))->write($docx), $spec, $fidelity);
 
         return new Output($bytes, self::MIME, 'docx');
     }

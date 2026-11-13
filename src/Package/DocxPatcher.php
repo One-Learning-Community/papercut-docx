@@ -28,6 +28,9 @@ final class DocxPatcher
     /** The text of a run that patch() turns into a column break (`w:br w:type="column"`); see columnBreak(). */
     public const string COLUMN_BREAK = 'papercut-column-break';
 
+    /** The text of a run that patch() replaces with an equation's OMML; the equation's id follows. See PatchSpec::withMath(). */
+    public const string MATH = 'papercut-math-';
+
     /** A highlight value patch() turns into run shading in $hex (six lower-case hex digits). */
     public static function shading(string $hex): string
     {
@@ -79,6 +82,7 @@ final class DocxPatcher
             $parts = self::columns($parts, $spec->columns);
         }
         $parts = self::columnBreaks($parts, $spec->columnBreaks);
+        $parts = self::maths($parts, $spec->maths, $spec->inlineMaths);
 
         $font = self::attr($spec->fontFamily);
         $lang = $spec->lang === null ? '' : '<w:lang w:val="' . self::attr($spec->lang) . '"/>';
@@ -183,6 +187,69 @@ final class DocxPatcher
             throw new \LogicException('php-docx output changed: column break run not found');
         }
         $parts['word/document.xml'] = str_replace($run, '<w:r><w:br w:type="column"/></w:r>', $xml);
+
+        return $parts;
+    }
+
+    /**
+     * Replaces each equation's marker run (`<w:r>` holding only `papercut-math-<id>`) with its OMML, and declares the
+     * math namespace on the root of every part that got one. A declared equation whose marker is gone, or a marker
+     * with no equation, throws: the equation would silently vanish or leak into the document as text.
+     *
+     * @param array<string, string> $parts
+     * @param array<int, string> $maths
+     * @param array<int, true> $inline ids of the equations that sit among runs; a block equation's run must be its paragraph's only child
+     * @return array<string, string>
+     */
+    private static function maths(array $parts, array $maths, array $inline): array
+    {
+        if ($maths === []) {
+            return $parts;
+        }
+        $seen = [];
+        $ns = 'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"';
+        foreach ($parts as $name => $xml) {
+            if (preg_match('~^word/(document|header\d+|footer\d+)\.xml$~', $name) !== 1) {
+                continue;
+            }
+            $replaced = 0;
+            $xml = (string) preg_replace_callback(
+                '~(</w:pPr>|<w:p>)?<w:r>(?:<w:rPr>(?:(?!</w:rPr>).)*</w:rPr>)?<w:t(?: xml:space="preserve")?>' . self::MATH . '(\d+)</w:t></w:r>(</w:p>)?~s',
+                static function (array $m) use ($maths, $inline, &$seen, &$replaced): string {
+                    $id = (int) $m[2];
+                    if (!isset($maths[$id])) {
+                        throw new \LogicException('php-docx output changed: equation marker ' . $id . ' has no equation');
+                    }
+                    if (!isset($inline[$id]) && ($m[1] === '' || ($m[3] ?? '') === '')) {
+                        throw new \LogicException('Equation ' . $id . ' is a block but shares its paragraph with other content');
+                    }
+                    $seen[$id] = true;
+                    $replaced++;
+
+                    return $m[1] . $maths[$id] . ($m[3] ?? '');
+                },
+                $xml,
+            );
+            if ($replaced > 0) {
+                if (str_contains($xml, $ns)) {
+                    $root = null;
+                } else {
+                    $xml = (string) preg_replace('~<(w:(?:document|hdr|ftr))\b~', '<$1 ' . $ns, $xml, 1, $root);
+                }
+                if ($root === 0) {
+                    throw new \LogicException('php-docx output changed: root element of ' . $name . ' not found');
+                }
+                $parts[$name] = $xml;
+            }
+            if (preg_match('~<w:t(?: xml:space="preserve")?>[^<]*' . self::MATH . '\d+~', $xml) === 1) {
+                throw new \LogicException('Marker-like text was left in ' . $name . ': either an equation marker was mangled (php-docx output changed) or the document text contains "' . self::MATH . 'N"');
+            }
+        }
+        foreach ($maths as $id => $_) {
+            if (!isset($seen[$id])) {
+                throw new \LogicException('php-docx output changed: equation ' . $id . ' marker not found');
+            }
+        }
 
         return $parts;
     }

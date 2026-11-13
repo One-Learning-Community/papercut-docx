@@ -131,7 +131,9 @@ final class ListMapper
         $clipped = $first instanceof Paragraph && $first->style->lineSpacingRule === 'exact' && ($first->style->lineSpacingTwips ?? PHP_INT_MAX) < 20;
         // A bordered paragraph (a shaded code block, whose label is inside its box) can't carry the marker either: it would sit in the box.
         $boxed = $first instanceof Paragraph && $first->style->borders !== null;
-        if ($marked && !($first instanceof Paragraph && !$clipped && !$boxed && !$this->settled->has($first))) {
+        // A typed label is a run in the first paragraph, and an equation's paragraph holds nothing but the equation.
+        $equation = $label !== '' && $first instanceof Paragraph && EquationMapper::isMarker($first);
+        if ($marked && !($first instanceof Paragraph && !$clipped && !$boxed && !$equation && !$this->settled->has($first))) {
             array_unshift($blocks, new Paragraph([]));
         }
         foreach ($blocks as $k => $b) {
