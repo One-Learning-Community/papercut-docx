@@ -178,8 +178,10 @@ final readonly class Raster
             $im->setFormat('SVG');
             $im->readImageBlob($xml, 'image.svg');
             // The reader's format sticks to the wand until it is set again.
-            $im->setFormat('PNG');
-            $im->setImageFormat('PNG');
+            // Always RGBA: left to choose, ImageMagick 7.1.2 writes an all-transparent image as 1-bit grey
+            // with a tRNS chunk, which not every reader takes as transparent.
+            $im->setFormat('PNG32');
+            $im->setImageFormat('PNG32');
             $im->setImageDepth(8);
             if ($im->getImageWidth() !== $width || $im->getImageHeight() !== $height) {
                 $im->resizeImage($width, $height, \Imagick::FILTER_LANCZOS, 1);

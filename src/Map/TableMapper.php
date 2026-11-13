@@ -6,7 +6,7 @@ namespace Papercut\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Table, TableCell as DocxCell, TableRow};
 use Dskripchenko\PhpDocx\Element\Paragraph;
-use Dskripchenko\PhpDocx\Style\{Alignment, CellStyle, TableStyle, VerticalAlign};
+use Dskripchenko\PhpDocx\Style\{Alignment, CellStyle, RowHeightRule, TableStyle, VerticalAlign};
 use Papercut\Layout\GridCell;
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
@@ -100,7 +100,12 @@ final class TableMapper
             $this->continueTo($table, $frame, $reach, true);
         }
 
-        return new TableRow($frame->cells, isHeader: $frame->header, cantSplit: true);
+        // An "at least" height, as in the PDF: a cell's height or min-height is a floor for its row. Word clips
+        // what overflows an exact height, and its text never measures quite like ours.
+        $floor = max($frame->floor, $table->rowFloors[$frame->rowIndex] ?? 0.0);
+        $height = $floor > 0.0 ? Units::tw($floor) : null;
+
+        return new TableRow($frame->cells, isHeader: $frame->header, heightTwips: $height, cantSplit: true, heightRule: RowHeightRule::AtLeast);
     }
 
     /**
@@ -138,6 +143,35 @@ final class TableMapper
         }
     }
 
+    /**
+     * Raises the height floor of the cell's rows to its height or min-height (border box, as the PDF lays it
+     * out). A cell spanning rows shares it out evenly, where the PDF stretches its rows to fit; both that and
+     * a fixed height, which becomes a floor too, are reported.
+     */
+    private function floor(ComputedStyle $s, Frame $row, ?Frame $table, int $rowspan, string $path): void
+    {
+        if ($s->height instanceof Length) {
+            $this->fidelity->approximated('fixed height', $path);
+        }
+        $h = max(
+            $s->height instanceof Length ? $s->height->points : 0.0,
+            $s->minHeight instanceof Length ? $s->minHeight->points : 0.0,
+        );
+        if ($h <= 0.0) {
+            return;
+        }
+        if ($table === null) {
+            $row->floor = max($row->floor, $h);
+            return;
+        }
+        if ($rowspan > 1) {
+            $this->fidelity->approximated('spanning cell height', $path);
+        }
+        for ($r = $row->rowIndex; $r < $row->rowIndex + $rowspan; $r++) {
+            $table->rowFloors[$r] = max($table->rowFloors[$r] ?? 0.0, $h / $rowspan);
+        }
+    }
+
     /** @param list<BlockElement> $blocks */
     public function cell(TableCell $n, ComputedStyle $s, Frame $cell, Frame $row, ?Frame $table, array $blocks, string $path): DocxCell
     {
@@ -156,6 +190,7 @@ final class TableMapper
         if ($v === null) {
             $this->fidelity->approximated('cell justify', $path);
         }
+        $this->floor($s, $row, $table, $at->rowspan ?? 1, $path);
 
         $style = $this->boxes->cellStyle($s, Units::tw($cell->width), $at->colspan ?? $n->span(), $v ?? VerticalAlign::Top, $row->style, rowSpan: $at->rowspan ?? 1);
         if ($table !== null && $at !== null && $at->rowspan > 1) {

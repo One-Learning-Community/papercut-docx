@@ -129,6 +129,19 @@ final class RasterTest extends TestCase
     }
 
     #[RequiresPhpExtension('imagick')]
+    public function test_an_svg_that_draws_nothing_is_a_transparent_rgba_png(): void
+    {
+        $raster = Raster::detect();
+        if (!$raster->imagickSvg) {
+            self::markTestSkipped('This Imagick build cannot read SVG.');
+        }
+        $png = $raster->svg(SvgDocument::parse('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"/>'), 20, 20);
+        self::assertNotNull($png);
+        self::assertSame(6, ord($png[25]), 'PNG colour type');
+        self::assertSame(127, self::pixel($png, 10, 10)[3]);
+    }
+
+    #[RequiresPhpExtension('imagick')]
     public function test_svg_never_loads_outside_files(): void
     {
         $raster = Raster::detect();

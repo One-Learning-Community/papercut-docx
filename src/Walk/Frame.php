@@ -41,6 +41,10 @@ final class Frame
     public int $placed = 0;
     /** Next grid column (TableRow frames). */
     public int $column = 0;
+    /** The row's height floor in pt when it has no table frame to keep it in (TableRow frames). */
+    public float $floor = 0.0;
+    /** @var array<int, float> each row's height floor in pt by row index, from its cells' heights and min-heights (Table frames) */
+    public array $rowFloors = [];
     /** Whether this table row is a header row. */
     public bool $header = false;
     /** Whether this node's decorated box is a Word table: lists inside it start again at level 0. */

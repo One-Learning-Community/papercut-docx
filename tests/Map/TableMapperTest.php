@@ -99,6 +99,37 @@ final class TableMapperTest extends TestCase
         self::assertSame(3, $d->count(self::TBL . '/w:tr[w:trPr/w:cantSplit]'));
     }
 
+    public function test_a_cell_min_height_is_an_at_least_row_height(): void
+    {
+        $table = Table::make()->columns('1fr 1fr')
+            ->row(TableCell::make('a')->minHeight(pt(80)), TableCell::make('b')->minHeight(pt(40)))
+            ->row(TableCell::make(), TableCell::make()->minHeight(pt(30)))
+            ->row('c', 'd');
+        $d = self::export($table);
+        self::assertSame(['1600', '600'], $d->values(self::TBL . '/w:tr/w:trPr/w:trHeight/@w:val'));
+        self::assertSame(['atLeast', 'atLeast'], $d->values(self::TBL . '/w:tr/w:trPr/w:trHeight/@w:hRule'));
+        self::assertSame(0, $d->count(self::TBL . '/w:tr[3]/w:trPr/w:trHeight'));
+        self::assertSame([], self::exportedReports());
+    }
+
+    public function test_a_cell_height_is_an_at_least_row_height_and_reported(): void
+    {
+        $d = self::export(Table::make()->columns('1fr 1fr')->row(TableCell::make('a')->height(pt(50)), 'b'));
+        self::assertSame('1000', $d->value(self::TBL . '/w:tr/w:trPr/w:trHeight/@w:val'));
+        self::assertSame('atLeast', $d->value(self::TBL . '/w:tr/w:trPr/w:trHeight/@w:hRule'));
+        self::assertSame(['Approximated fixed height @ page > body > table[0] > tr[0] > td[0]'], self::exportedReports());
+    }
+
+    public function test_a_spanning_cell_shares_its_min_height_among_its_rows(): void
+    {
+        $table = Table::make()->columns('1fr 1fr')
+            ->row(TableCell::make('a')->rowspan(2)->minHeight(pt(80)), 'b')
+            ->row('c');
+        $d = self::export($table);
+        self::assertSame(['800', '800'], $d->values(self::TBL . '/w:tr/w:trPr/w:trHeight/@w:val'));
+        self::assertSame(['Approximated spanning cell height @ page > body > table[0] > tr[0] > td[0]'], self::exportedReports());
+    }
+
     public function test_colspan(): void
     {
         $table = Table::make()->columns('100pt 100pt 100pt')
