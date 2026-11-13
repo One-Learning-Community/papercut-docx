@@ -190,4 +190,55 @@ final class TextMapperTest extends TestCase
         $dom = new \DOMDocument();
         self::assertTrue(@$dom->loadXML(DocxInspector::of($out->bytes())->part('word/document.xml')));
     }
+    /** @return list<string> every run's text in order, links unwrapped */
+    private static function runTexts(Paragraph $p): array
+    {
+        $texts = [];
+        foreach ($p->children as $c) {
+            foreach ($c instanceof Hyperlink ? $c->children : [$c] as $r) {
+                $texts[] = $r instanceof Run ? $r->text : '?';
+            }
+        }
+
+        return $texts;
+    }
+
+    public function test_whitespace_collapses_across_spans_as_in_the_pdf(): void
+    {
+        $p = $this->para(Text::markup("\n    plain\n    <b>bold</b>\n    end\n"));
+        self::assertSame(['plain ', 'bold', ' end'], self::runTexts($p));
+    }
+
+    public function test_whitespace_spanning_several_spans_becomes_one_space(): void
+    {
+        $p = $this->para(Text::spans(new Span("a \n "), new Span("\t "), new Span(' b'), new Span("\n"), new Span('  c  ')));
+        self::assertSame(['a ', 'b', ' ', 'c'], self::runTexts($p));
+    }
+
+    public function test_spaces_around_a_line_break_are_dropped(): void
+    {
+        $p = $this->para(Text::spans(new Span('one   '), Span::break(), new Span('   two')));
+        self::assertSame(['one', "\n", 'two'], self::runTexts($p));
+    }
+
+    public function test_no_break_spaces_are_kept(): void
+    {
+        $p = $this->para(Text::spans(new Span("a\u{00A0}\u{00A0} b")));
+        self::assertSame(["a\u{00A0}\u{00A0} b"], self::runTexts($p));
+    }
+
+    public function test_pre_wrap_spans_keep_their_spaces(): void
+    {
+        $p = $this->para(Text::spans(new Span('x  '), new Span('  a  b', Style::make(whiteSpace: \Papercut\Style\WhiteSpace::PreWrap)), new Span('  y')));
+        self::assertSame(['x ', '  a  b', ' y'], self::runTexts($p));
+    }
+
+    public function test_indentation_between_a_badge_and_the_next_span_is_one_space(): void
+    {
+        $p = $this->para(Text::markup("<badge>New</badge>\n                \n                <span color=\"red-500\">tail</span>"));
+        $texts = self::runTexts($p);
+        self::assertSame(['tail'], array_slice($texts, -1));
+        self::assertSame(' ', $texts[count($texts) - 2]);
+        self::assertCount(3, $texts);
+    }
 }

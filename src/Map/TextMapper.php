@@ -22,6 +22,9 @@ use Papercut\Value\{Color, Length};
  */
 final class TextMapper
 {
+    /** The whitespace that collapses outside pre-wrap; a no-break space is not part of it. */
+    private const string SPACES = " \t\n\r\f";
+
     public function __construct(
         private readonly LineMetrics $metrics,
         private readonly Fidelity $fidelity,
@@ -46,8 +49,12 @@ final class TextMapper
     public function paragraph(Text $t, ComputedStyle $s, Visit $at, ?string $blockHref = null, ?Color $backdrop = null, ?string $bookmark = null): Paragraph
     {
         $backdrop ??= Color::white();
-        /** @var list<array{Run, ?string, bool}> $runs run, link, whether it is a line break */
+        /** @var list<array{Run, ?string, bool, bool}> $runs run, link, whether it is a line break, whether its spaces collapse */
         $runs = [];
+        // Whitespace collapses as the PDF's itemizer does it: a run of spaces, tabs and newlines is one space, even
+        // across spans, and none is kept at the start of a line or before a break or the paragraph's end.
+        $atStart = true;
+        $endsSpace = false;
         foreach ($t->spanList() as $span) {
             // A span's own colours fade with the text; inherited ones already have.
             $own = ($this->theme ?? Theme::default())->spanStyle($span);
@@ -61,16 +68,54 @@ final class TextMapper
             }
             if ($cs->isInlineBox() && !$span->lineBreak) {
                 // An inline badge: Word has no inline box, so it is a shaded run with padding spaces.
+                if (trim($span->text, self::SPACES) === '') {
+                    continue;
+                }
                 $run = BadgeRun::run($span->text, $rs, new ComputedStyle(...[...get_object_vars($cs), 'background' => $spanBg]), BadgeRun::widestBorder($cs));
                 if ($cs->radius > 0.0) {
                     $this->fidelity->approximated('badge in a line', $at->path());
                 }
-                $runs[] = [$run, $span->href ?? $blockHref, false];
+                // Spaces just inside the badge space it from its neighbours, as in the PDF.
+                $space = new Run(' ', $this->runStyle($s));
+                if (!$atStart && !$endsSpace && strspn($span->text, self::SPACES) > 0) {
+                    $runs[] = [$space, $span->href ?? $blockHref, false, true];
+                }
+                $runs[] = [$run, $span->href ?? $blockHref, false, false];
+                $atStart = false;
+                $endsSpace = strspn(strrev($span->text), self::SPACES) > 0;
+                if ($endsSpace) {
+                    $runs[] = [$space, $span->href ?? $blockHref, false, true];
+                }
                 continue;
             }
-            // A line break is a run of its own, so a blank line takes the height of the text around it.
-            $runs[] = [new Run($span->lineBreak ? "\n" : $span->text, $rs), $span->href ?? $blockHref, $span->lineBreak];
+            if ($span->lineBreak) {
+                // A line break is a run of its own, so a blank line takes the height of the text around it.
+                self::trimEnd($runs);
+                $runs[] = [new Run("\n", $rs), $span->href ?? $blockHref, true, false];
+                $atStart = true;
+                $endsSpace = false;
+                continue;
+            }
+            if ($cs->whiteSpace === WhiteSpace::PreWrap) {
+                if ($span->text !== '') {
+                    $runs[] = [new Run($span->text, $rs), $span->href ?? $blockHref, false, false];
+                    $atStart = str_ends_with($span->text, "\n");
+                    $endsSpace = false;
+                }
+                continue;
+            }
+            $text = preg_replace('/[' . self::SPACES . ']+/', ' ', $span->text) ?? $span->text;
+            if (($atStart || $endsSpace) && str_starts_with($text, ' ')) {
+                $text = substr($text, 1);
+            }
+            if ($text === '') {
+                continue;
+            }
+            $runs[] = [new Run($text, $rs), $span->href ?? $blockHref, false, true];
+            $atStart = false;
+            $endsSpace = str_ends_with($text, ' ');
         }
+        self::trimEnd($runs);
         $children = self::linked($runs);
         if ($s->minLines > 2) {
             // Word's widow control keeps two lines together, never more.
@@ -89,10 +134,30 @@ final class TextMapper
     }
 
     /**
+     * Drops the space a line ends with, as the PDF does, before a break or at the paragraph's end.
+     *
+     * @param list<array{Run, ?string, bool, bool}> $runs
+     */
+    private static function trimEnd(array &$runs): void
+    {
+        $last = count($runs) - 1;
+        if ($last < 0 || !$runs[$last][3] || !str_ends_with($runs[$last][0]->text, ' ')) {
+            return;
+        }
+        $text = substr($runs[$last][0]->text, 0, -1);
+        if ($text === '') {
+            array_pop($runs);
+
+            return;
+        }
+        $runs[$last][0] = new Run($text, $runs[$last][0]->style);
+    }
+
+    /**
      * Runs in Word order, each with its link. A line break between two runs of one link belongs to that link, and
      * neighbouring runs of one link share a single hyperlink element.
      *
-     * @param list<array{Run, ?string, bool}> $runs
+     * @param list<array{Run, ?string, bool, bool}> $runs
      * @return list<InlineElement>
      */
     private static function linked(array $runs): array
