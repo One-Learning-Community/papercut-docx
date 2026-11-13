@@ -41,14 +41,14 @@ final class Flow
             }
             // Two tables back to back merge into one in Word; a hairline paragraph keeps them apart.
             if ($out !== [] && end($out) instanceof Table && $blocks[0] instanceof Table) {
-                $out[] = self::hairline();
+                $out[] = self::separator(end($out), $settled);
             }
             // Word draws consecutive paragraphs with identical borders as one box, so two boxes back to back (shaded code
             // blocks) need an unbordered paragraph between them. The same separates two rules in a row (a rule is a bordered
             // paragraph), which would otherwise merge into one line.
             $prev = $out === [] ? null : end($out);
             if ($prev instanceof Paragraph && $prev->style->borders !== null && $blocks[0] instanceof Paragraph && $blocks[0]->style->borders !== null) {
-                $out[] = self::hairline();
+                $out[] = self::separator($prev, $settled);
             }
             foreach (self::spaceAfter($blocks, $after, $settled) as $b) {
                 $out[] = $b;
@@ -136,6 +136,37 @@ final class Flow
      * A hairline paragraph with $after points of space after it. Its height is spacing, not line height,
      * and its run is 1pt, so readers without exact line heights (Google Docs) draw it tiny too.
      */
+    /**
+     * A hairline placed after $prev, keeping with what follows when $prev does: Word's keepNext chains through
+     * consecutive paragraphs, and an unflagged hairline in between would end the chain.
+     */
+    private static function separator(BlockElement $prev, Settled $settled, float $after = 0.0): Paragraph
+    {
+        $p = self::hairline($after);
+
+        return self::keepsWithNext($prev) ? self::withParagraph($p, ['keepWithNext' => true], $settled) : $p;
+    }
+
+    /** Whether Word keeps $b with what follows: a paragraph flagged keepNext, or a table whose last row's paragraphs are. */
+    private static function keepsWithNext(BlockElement $b): bool
+    {
+        if ($b instanceof Paragraph) {
+            return $b->style->keepWithNext;
+        }
+        if (!$b instanceof Table || $b->rows === []) {
+            return false;
+        }
+        foreach ($b->rows[count($b->rows) - 1]->cells as $cell) {
+            foreach ($cell->children as $child) {
+                if ($child instanceof Paragraph && $child->style->keepWithNext) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public static function hairline(float $after = 0.0): Paragraph
     {
         $p = new Paragraph(
@@ -187,7 +218,7 @@ final class Flow
         if ($p instanceof Paragraph) {
             $blocks[$last] = self::withParagraph($p, ['spaceAfterTwips' => $p->style->spaceAfterTwips + Units::tw($points)], $settled);
         } else {
-            $blocks[] = self::hairline($points);
+            $blocks[] = self::separator($p, $settled, $points);
         }
 
         return $blocks;
@@ -206,7 +237,9 @@ final class Flow
         if ($p instanceof Paragraph) {
             $blocks[0] = self::withParagraph($p, ['spaceBeforeTwips' => $p->style->spaceBeforeTwips + Units::tw($points)], $settled);
         } else {
-            array_unshift($blocks, self::hairline($points));
+            // The space is the block's own top margin, so it goes where the block goes: a heading kept with it
+            // stays kept, and the space never strands at the foot of a page.
+            array_unshift($blocks, self::withParagraph(self::hairline($points), ['keepWithNext' => true], $settled));
         }
 
         return $blocks;

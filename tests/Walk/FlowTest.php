@@ -125,6 +125,38 @@ final class FlowTest extends TestCase
         self::assertSame(1, $d->count("/w:document/w:body/w:tbl/w:tr[last()]//w:p[w:pPr/w:keepNext]"));
     }
 
+    public function test_a_heading_stays_with_a_table_that_has_a_top_margin(): void
+    {
+        $table = \Papercut\Table::make()->columns('1fr 1fr')->row('a', 'b')->margin(Edges::of(pt(12), pt(0), pt(0), pt(0)));
+        $d = self::export(Column::make(Text::h2('Sort cards'), $table));
+        // The heading, then the hairline carrying the table's top margin: both keep with what follows.
+        self::assertSame(2, $d->count('/w:document/w:body/w:p[following-sibling::w:tbl]'));
+        self::assertSame(2, $d->count('/w:document/w:body/w:p[following-sibling::w:tbl][w:pPr/w:keepNext]'));
+    }
+
+    public function test_a_section_heading_stays_with_the_table_after_it(): void
+    {
+        $section = \Papercut\Decorator\Section::make(\Papercut\Table::make()->columns('1fr 1fr')->row('a', 'b'))->number(3)->title('Sort cards');
+        $d = self::export($section);
+        // The numbered heading is a one-row Word table; the hairline carrying its bottom margin keeps it with the body.
+        self::assertSame(0, $d->count('/w:document/w:body/w:tbl[1]/w:tr[last()]//w:p[not(w:pPr/w:keepNext)]'));
+        self::assertSame(1, $d->count('/w:document/w:body/w:p[preceding-sibling::w:tbl][following-sibling::w:tbl]'));
+        self::assertSame(1, $d->count('/w:document/w:body/w:p[preceding-sibling::w:tbl][following-sibling::w:tbl][w:pPr/w:keepNext]'));
+    }
+
+    public function test_a_kept_table_stays_with_a_table_after_it(): void
+    {
+        $table = static fn (string $t): \Papercut\Table => \Papercut\Table::make()->columns('1fr')->row($t);
+        $d = self::export(Column::make($table('first')->keepWithNext(), $table('second')));
+        self::assertSame(1, $d->count('/w:document/w:body/w:p[preceding-sibling::w:tbl][following-sibling::w:tbl][w:pPr/w:keepNext]'));
+    }
+
+    public function test_space_after_a_table_that_does_not_keep_is_not_kept(): void
+    {
+        $d = self::export(Column::make(\Papercut\Table::make()->columns('1fr')->row('a'), Text::make('after'))->gap(pt(8)));
+        self::assertSame([], $d->values('//w:keepNext'));
+    }
+
     public function test_column_alignment_reaches_text_and_images(): void
     {
         $png = (string) base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', true);
