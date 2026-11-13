@@ -49,7 +49,9 @@ padding, a border or a background becomes a one-cell table.
 - Fonts are named, not embedded: the reader's machine supplies them.
 - Pictures Word can't take as they are are drawn at the size the PDF gives them: WebP and AVIF images, image
   `cover` and opacity, and plain QR codes need `ext-gd`; styled QR codes need `ext-imagick` and
-  `bacon/bacon-qr-code`; SVG needs an `ext-imagick` that reads SVG. Without them, these are left out and reported.
+  `bacon/bacon-qr-code`; SVG needs librsvg's `rsvg-convert` (set `DocxOptions(rsvgConvert:)`, or
+  `PAPERCUT_RSVG_CONVERT` in Laravel) or an `ext-imagick` that reads SVG. Without them, these are left out and
+  reported.
 - Opacity is drawn by blending each faded colour onto what lies beneath it; text backgrounds keep their exact colour.
 - Corner radius on boxes, other content in background and overlay layers, a border or background on a layer
   picture, PDF page templates
