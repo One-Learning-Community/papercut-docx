@@ -170,6 +170,29 @@ final class ImageMapperTest extends TestCase
         self::assertSame([Raster::pixels(30), Raster::pixels(15)], self::dims(self::media($d)));
     }
 
+    public function test_docx_options_send_svg_through_rsvg_convert(): void
+    {
+        $doc = \Papercut\Document::make(\Papercut\Page::a4()->body(Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#0a0"/></svg>')));
+        // A stand-in that answers as rsvg-convert but always draws blue: a green picture would be Imagick's.
+        $real = \Papercut\Docx\Tests\Support\RsvgConvert::require();
+        $script = tempnam(sys_get_temp_dir(), 'rsvg');
+        self::assertNotFalse($script);
+        file_put_contents($script, "#!/bin/sh\nif [ \"\$1\" = --version ]; then exec \"$real\" --version; fi\ncat > /dev/null\n"
+            . "exec \"$real\" \"\$@\" <<EOF\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\" fill=\"#00f\"/></svg>\nEOF\n");
+        chmod($script, 0755);
+        try {
+            $d = DocxInspector::of($doc->export(new \Papercut\Docx\DocxExporter(), new \Papercut\Docx\DocxOptions(rsvgConvert: $script))->bytes());
+        } finally {
+            unlink($script);
+        }
+        $png = self::media($d);
+        self::assertSame([Raster::pixels(30), Raster::pixels(15)], self::dims($png));
+        $im = imagecreatefromstring($png);
+        self::assertNotFalse($im);
+        $c = imagecolorsforindex($im, (int) imagecolorat($im, 10, 10));
+        self::assertSame([0, 0, 255], [$c['red'], $c['green'], $c['blue']]);
+    }
+
     public function test_svg_without_imagick_is_left_out(): void
     {
         $svg = Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>');

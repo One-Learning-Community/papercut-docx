@@ -94,7 +94,7 @@ final class DocxExporter implements Exporter
             new InlineRow($fidelity, $text, $widths),
             new TableMapper($fidelity, $boxes),
             new ListMapper($numbering, $fidelity),
-            new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect()),
+            new ImageMapper($fidelity, DefaultBackend::make(false), Raster::detect($options->rsvgConvert)),
             $toc,
             $themes,
             $equations,

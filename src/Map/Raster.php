@@ -7,6 +7,7 @@ namespace Papercut\Docx\Map;
 use Dskripchenko\PhpDocx\Element\ImageFormat;
 use Papercut\Backend\PhpPdf\GdImageConverter;
 use Papercut\Barcode\Bacon\BaconQrSvg;
+use Papercut\Exception\InvalidValue;
 use Papercut\QrCode;
 use Papercut\Value\Color;
 use Papercut\Vector\SvgDocument;
@@ -14,7 +15,8 @@ use Papercut\Vector\SvgDocument;
 /**
  * Pictures for Word, which takes only PNG, JPEG, GIF and BMP and draws them as they are: other formats are
  * converted, and what the PDF does to an image (cropping, opacity), along with QR codes
- * and SVG, is baked into the pixels. GD does the bitmap work; Imagick draws styled QR codes and SVG.
+ * and SVG, is baked into the pixels. GD does the bitmap work; Imagick draws styled QR codes, and SVG unless
+ * rsvg-convert is configured: that draws SVG properly whatever the ImageMagick build, which Imagick itself may not.
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */
@@ -28,14 +30,37 @@ final readonly class Raster
         public bool $imagick,
         /** Whether this Imagick build can read SVG. */
         public bool $imagickSvg,
+        /** The rsvg-convert executable that draws SVG ahead of Imagick; null for Imagick alone. */
+        public ?string $rsvgConvert = null,
+        /** Seconds rsvg-convert gets for one SVG before it is stopped and Imagick tried instead. */
+        public float $rsvgTimeout = 30.0,
     ) {
     }
 
-    public static function detect(): self
+    /** @throws InvalidValue when $rsvgConvert is given but isn't an executable file, or PHP can't start processes */
+    public static function detect(?string $rsvgConvert = null): self
     {
         $imagick = extension_loaded('imagick');
+        if ($rsvgConvert !== null) {
+            $invalid = static fn (string $why): InvalidValue => InvalidValue::for('rsvg-convert path', $rsvgConvert)->because($why);
+            // Absolute, so the file checked here is the one run, not one proc_open() finds on PATH.
+            if (!str_starts_with($rsvgConvert, '/') && preg_match('/^[A-Za-z]:[\\\\\/]/', $rsvgConvert) !== 1) {
+                throw $invalid('it must be an absolute path');
+            }
+            if (!is_file($rsvgConvert) || !is_executable($rsvgConvert)) {
+                throw $invalid('it is not an executable file');
+            }
+            if (!function_exists('proc_open')) {
+                throw $invalid('proc_open() is disabled, so PHP cannot run it');
+            }
+            // A wrong program, or one that can't start (another architecture, a noexec mount), would otherwise
+            // fall back to Imagick on every SVG without a word.
+            if (!str_contains(self::probe($rsvgConvert), 'rsvg-convert')) {
+                throw $invalid('it does not run as rsvg-convert (rsvg-convert --version gave nothing recognisable)');
+            }
+        }
 
-        return new self(extension_loaded('gd'), $imagick, $imagick && \Imagick::queryFormats('SVG') !== []);
+        return new self(extension_loaded('gd'), $imagick, $imagick && \Imagick::queryFormats('SVG') !== [], $rsvgConvert);
     }
 
     /**
@@ -157,19 +182,27 @@ final readonly class Raster
     }
 
     /**
-     * The SVG as a PNG of $width x $height pixels, through Imagick. Anything that could reach outside the
-     * document (images, links to files, external url()s) is removed first: the PDF draws none of it either.
+     * The SVG as a PNG of $width x $height pixels, through rsvg-convert when it is configured and succeeds, else
+     * Imagick. Anything that could reach outside the document (images, links to files, external url()s) is
+     * removed first: the PDF draws none of it either.
      *
      * @param positive-int $width
      * @param positive-int $height
      */
     public function svg(SvgDocument $doc, int $width, int $height): ?string
     {
-        if (!$this->imagickSvg) {
+        if (!$this->imagickSvg && $this->rsvgConvert === null) {
             return null;
         }
         $xml = self::contained($doc->xml, $width, $height);
         if ($xml === null) {
+            return null;
+        }
+        $png = $this->rsvgConvert === null ? null : $this->rsvg($this->rsvgConvert, $xml, $width, $height);
+        if ($png !== null) {
+            return PngTimestamps::strip($png);
+        }
+        if (!$this->imagickSvg) {
             return null;
         }
         try {
@@ -195,6 +228,119 @@ final readonly class Raster
         return $png === '' ? null : PngTimestamps::strip($png);
     }
 
+    /** What `$binary --version` prints, or '' when it can't be run. */
+    private static function probe(string $binary): string
+    {
+        $pipes = [];
+        $proc = @proc_open([$binary, '--version'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        if (!is_resource($proc)) {
+            return '';
+        }
+        fclose($pipes[0]);
+        stream_set_timeout($pipes[1], 5);
+        $out = (string) stream_get_contents($pipes[1]);
+        $stuck = stream_get_meta_data($pipes[1])['timed_out'];
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        if ($stuck) {
+            proc_terminate($proc, 9);
+        }
+        proc_close($proc);
+
+        return $stuck ? '' : $out;
+    }
+
+    /**
+     * The contained SVG drawn by rsvg-convert, read from stdin so it has no directory to resolve anything
+     * against. Null when it fails, runs past the timeout, or draws something other than a $width x $height PNG.
+     *
+     * @param positive-int $width
+     * @param positive-int $height
+     */
+    private function rsvg(string $binary, string $xml, int $width, int $height): ?string
+    {
+        $pipes = [];
+        $proc = @proc_open(
+            [$binary, '-f', 'png', '-w', (string) $width, '-h', (string) $height],
+            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+        );
+        if (!is_resource($proc)) {
+            return null;
+        }
+        foreach ($pipes as $pipe) {
+            stream_set_blocking($pipe, false);
+        }
+        // Write and read together: a large SVG and a large PNG would otherwise wait on each other.
+        $in = $xml;
+        $stdin = $pipes[0];
+        $reading = [1 => $pipes[1], 2 => $pipes[2]];
+        $out = '';
+        $deadline = microtime(true) + $this->rsvgTimeout;
+        while ($reading !== []) {
+            $left = $deadline - microtime(true);
+            if ($left <= 0.0) {
+                break;
+            }
+            $read = array_values($reading);
+            $write = $stdin === null ? [] : [$stdin];
+            $except = null;
+            if (@stream_select($read, $write, $except, (int) $left, (int) (fmod($left, 1.0) * 1e6)) === false) {
+                // Most often a signal (EINTR) in a worker with async signals; the deadline bounds the retries.
+                usleep(1000);
+                continue;
+            }
+            if ($stdin !== null && $write !== []) {
+                $n = @fwrite($stdin, $in);
+                $in = $n === false ? '' : substr($in, $n);
+                if ($in === '') {
+                    fclose($stdin);
+                    $stdin = null;
+                }
+            }
+            foreach ($read as $stream) {
+                $chunk = fread($stream, 65536);
+                if ($chunk !== false && $chunk !== '') {
+                    if ($stream === $pipes[1]) {
+                        $out .= $chunk;
+                    }
+                } elseif (feof($stream)) {
+                    $key = array_search($stream, $reading, true);
+                    if ($key !== false) {
+                        unset($reading[$key]);
+                    }
+                    fclose($stream);
+                }
+            }
+        }
+        $finished = $reading === [];
+        if ($stdin !== null) {
+            fclose($stdin);
+        }
+        foreach ($reading as $stream) {
+            fclose($stream);
+        }
+        // Its pipes closed, it should be done; one that lives on (a wrapper that left work running) is stopped
+        // at the deadline too, rather than leaving proc_close() to wait on it.
+        $status = proc_get_status($proc);
+        while ($finished && $status['running'] && microtime(true) < $deadline) {
+            usleep(1000);
+            $status = proc_get_status($proc);
+        }
+        $exit = $status['running'] ? -1 : $status['exitcode'];
+        if (!$finished || $status['running']) {
+            $finished = false;
+            proc_terminate($proc, 9);
+        }
+        proc_close($proc);
+        if (!$finished || $exit !== 0 || strlen($out) < 24 || !str_starts_with($out, "\x89PNG\r\n\x1a\n")) {
+            return null;
+        }
+        $size = unpack('Nw/Nh', substr($out, 16, 8));
+
+        return $size !== false && $size['w'] === $width && $size['h'] === $height ? $out : null;
+    }
+
     /** The SVG with nothing external left in it, sized $width x $height px around its view box. */
     private static function contained(string $xml, int $width, int $height): ?string
     {
@@ -217,7 +363,10 @@ final readonly class Raster
             if ($attr->ownerElement === null) {
                 continue;
             }
-            if ($attr->localName === 'href' && !str_starts_with(trim($attr->value), '#')) {
+            // A CSS escape (\75 rl for url) would slip a reference past the patterns: such a value goes whole.
+            if (str_contains($attr->value, '\\')) {
+                $attr->ownerElement->removeAttributeNode($attr);
+            } elseif ($attr->localName === 'href' && !str_starts_with(trim($attr->value), '#')) {
                 $attr->ownerElement->removeAttributeNode($attr);
             } elseif ($external($attr->value)) {
                 // A paint that can't be found draws nothing, as it would in a browser.
@@ -225,7 +374,7 @@ final readonly class Raster
             }
         }
         foreach (self::elements($xpath, '//*[local-name()="style"]') as $el) {
-            if ($external($el->textContent)) {
+            if ($external($el->textContent) || str_contains($el->textContent, '\\')) {
                 $el->parentNode?->removeChild($el);
             }
         }
