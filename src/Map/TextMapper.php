@@ -59,6 +59,15 @@ final class TextMapper
                 // php-docx writes no run shading, but writes a highlight as given: DocxPatcher turns this one into w:shd.
                 $rs = new RunStyle(...[...get_object_vars($rs), 'highlight' => DocxPatcher::shading($bg)]);
             }
+            if ($cs->isInlineBox() && !$span->lineBreak) {
+                // An inline badge: Word has no inline box, so it is a shaded run with padding spaces.
+                $run = BadgeRun::run($span->text, $rs, new ComputedStyle(...[...get_object_vars($cs), 'background' => $spanBg]), BadgeRun::widestBorder($cs));
+                if ($cs->radius > 0.0) {
+                    $this->fidelity->approximated('badge in a line', $at->path());
+                }
+                $runs[] = [$run, $span->href ?? $blockHref, false];
+                continue;
+            }
             // A line break is a run of its own, so a blank line takes the height of the text around it.
             $runs[] = [new Run($span->lineBreak ? "\n" : $span->text, $rs), $span->href ?? $blockHref, $span->lineBreak];
         }

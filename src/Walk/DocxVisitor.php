@@ -7,7 +7,7 @@ namespace Papercut\Docx\Walk;
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, HorizontalAnchor, ImagePosition, ParagraphStyle, VerticalAnchor};
 use Papercut\{ColumnBreak, Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
-use Papercut\Docx\Map\{BoxMapper, ColumnsMark, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
+use Papercut\Docx\Map\{BadgeRun, BoxMapper, ColumnsMark, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
 use Papercut\Docx\Package\DocxPatcher;
 use Papercut\Export\Fidelity;
 use Papercut\Layout\ColumnFlowLayouter;
@@ -260,6 +260,18 @@ final class DocxVisitor implements TreeVisitor
             $blocks = [BoxMapper::rule($style)];
             $style = BoxMapper::undecorated($style);
         } elseif ($glyph !== null) {
+            $style = BoxMapper::undecorated($style);
+        } elseif ($node instanceof View && $node->isBadge() && BadgeRun::textOnly($blocks) && BadgeRun::drawable($style)) {
+            // A badge of plain text is a shaded run in the paragraph, not a table nested in its container.
+            $paragraph = $blocks[0];
+            \assert($paragraph instanceof Paragraph);
+            if ($style->radius > 0.0) {
+                $this->fidelity->approximated('badge in a line', $at->path());
+            }
+            $blocks = [new Paragraph(BadgeRun::runs($paragraph->children, $style, BadgeRun::evenBorder($style)), $paragraph->style, $paragraph->headingLevel, $paragraph->styleId)];
+            if ($crossJc !== null) {
+                $blocks = [Flow::withParagraph($blocks[0], ['alignment' => $crossJc], $this->lists->settled())];
+            }
             $style = BoxMapper::undecorated($style);
         } elseif ($node instanceof View && !$parent->isRow && !$frame->isRow && StyleName::leads($node->styleName(), 'code-block')
             && BoxMapper::decorated($style) && ($shaded = $this->boxes->shadedParagraphs($blocks, $style, $this->lists->settled(), $at->path())) !== null) {

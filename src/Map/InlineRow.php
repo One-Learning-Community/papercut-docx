@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Papercut\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{Hyperlink, InlineElement, Paragraph, Run};
-use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle, RunStyle};
-use Papercut\Docx\Package\DocxPatcher;
+use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle};
 use Papercut\Docx\Walk\Frame;
 use Papercut\Export\Fidelity;
 use Papercut\Layout\WidthResolver;
 use Papercut\View;
-use Papercut\Style\{BorderStyle, ComputedStyle, Justify};
+use Papercut\Style\{ComputedStyle, Justify};
 use Papercut\Value\Auto;
 
 /**
@@ -22,7 +21,7 @@ use Papercut\Value\Auto;
  * item is one paragraph of text runs (links included) that is content-sized: it does not grow, has no width, height,
  * margin, and carries a border or padding only when it is a badge: a background, or the same solid or dashed border on
  * every side, or both. The fill becomes run shading, the border a run border (Word joins the runs into one box), and
- * the padding a no-break space on each side inside them. A rounded corner is lost; that is reported. The items' max-content widths plus the
+ * the padding no-break spaces inside them (see BadgeRun). A rounded corner is lost; that is reported. The items' max-content widths plus the
  * gaps must fit the row, so the PDF sets them on one line without squeezing any; otherwise the PDF wraps a long item
  * in its own column, and the row keeps its table. Anything else keeps its table.
  *
@@ -30,9 +29,6 @@ use Papercut\Value\Auto;
  */
 final class InlineRow
 {
-    private const string NBSP = "\u{00A0}";
-    /** Padding at least this wide (pt) reads as a space inside the shading. */
-    private const float PAD = 3.0;
     private const float EPSILON = 0.01;
 
     public function __construct(
@@ -108,20 +104,8 @@ final class InlineRow
             && $i->basis instanceof Auto && $i->minWidth === null && $i->maxWidth === null
             && $i->minHeight === null && $i->maxHeight === null
             && $i->margin->horizontal() + $i->margin->vertical() === 0.0
-            && (!$border || self::evenBorder($i) !== null)
+            && (!$border || BadgeRun::evenBorder($i) !== null)
             && ($shaded || $border || $i->padding->horizontal() + $i->padding->vertical() === 0.0);
-    }
-
-    /** The border's width in eighths of a point when every side has the same one, as a run border must; else null. */
-    private static function evenBorder(ComputedStyle $i): ?int
-    {
-        $w = $i->borderWidth;
-        $top = $w->top->points;
-        if ($top <= 0.0 || abs($w->right->points - $top) > self::EPSILON || abs($w->bottom->points - $top) > self::EPSILON || abs($w->left->points - $top) > self::EPSILON) {
-            return null;
-        }
-
-        return max(2, (int) round($top * 8));
     }
 
     /** @param list<InlineElement> $children */
@@ -143,43 +127,15 @@ final class InlineRow
     /** @return list<InlineElement> */
     private function item(Paragraph $p, ComputedStyle $i, string $path): array
     {
-        $fill = Units::fill($i->background);
-        $border = self::evenBorder($i);
-        if ($fill === null && $border === null) {
+        $border = BadgeRun::evenBorder($i);
+        if (Units::fill($i->background) === null && $border === null) {
             return $p->children;
-        }
-        $mark = $border === null
-            ? DocxPatcher::shading((string) $fill)
-            : DocxPatcher::boxed($fill, $border, $i->borderStyle === BorderStyle::Dashed ? 'dashed' : 'single', Units::hex($i->borderColor));
-        $shade = static fn (RunStyle $r): RunStyle => $r->highlight !== null ? $r : new RunStyle(...[...get_object_vars($r), 'highlight' => $mark]);
-        $out = [];
-        $firstRun = null;
-        $lastRun = null;
-        foreach ($p->children as $c) {
-            if ($c instanceof Hyperlink) {
-                $runs = array_map(static fn (InlineElement $r): InlineElement => $r instanceof Run ? new Run($r->text, $shade($r->style)) : $r, $c->children);
-                $c = new Hyperlink($c->href, $runs, $c->anchor);
-                $inner = $runs[0] ?? null;
-                $innerLast = $runs[count($runs) - 1] ?? null;
-                $firstRun ??= $inner instanceof Run ? $inner : null;
-                $lastRun = $innerLast instanceof Run ? $innerLast : $lastRun;
-            } elseif ($c instanceof Run) {
-                $c = new Run($c->text, $shade($c->style));
-                $firstRun ??= $c;
-                $lastRun = $c;
-            }
-            $out[] = $c;
-        }
-        if ($i->padding->left->points >= self::PAD && $firstRun !== null) {
-            array_unshift($out, new Run(self::NBSP, $firstRun->style));
-        }
-        if ($i->padding->right->points >= self::PAD && $lastRun !== null) {
-            $out[] = new Run(self::NBSP, $lastRun->style);
         }
         if ($i->radius > 0.0) {
             $this->fidelity->approximated('badge in a line', $path);
         }
 
-        return $out;
+        // Only a badge (undecorated by now) is padded; a plain highlight stays a shaded run.
+        return BadgeRun::runs($p->children, $i, $border, $i->padding->horizontal() > 0.0);
     }
 }

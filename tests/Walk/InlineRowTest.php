@@ -28,10 +28,9 @@ final class InlineRowTest extends TestCase
         self::assertStringContainsString('Website', $text);
         self::assertSame(1, $d->count('/w:document/w:body/w:p/w:pPr/w:numPr'));
         self::assertSame(1, $d->count('//w:p/w:hyperlink'));
-        // the badge fill (slate-100) shades its text and the no-break space on each side, and nothing else
-        self::assertSame(3, $d->count('//w:r[w:rPr/w:shd[@w:fill="f1f5f9"]]'));
-        self::assertSame(1, $d->count('//w:r[w:rPr/w:shd][w:t="Website"]'));
-        self::assertSame(2, $d->count('//w:r[w:rPr/w:shd][w:t="' . self::NBSP . '"]'));
+        // the badge fill (slate-100) shades one run, its text with two no-break spaces on each side, and nothing else
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:shd[@w:fill="f1f5f9"]]'));
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:shd][w:t="' . self::NBSP . self::NBSP . 'Website' . self::NBSP . self::NBSP . '"]'));
         self::assertContains('approximated badge in a line', array_map(static fn ($r): string => strtolower($r->level->name) . ' ' . $r->feature, self::$exported));
     }
 
@@ -40,21 +39,21 @@ final class InlineRowTest extends TestCase
         $d = self::export(Row::make(Badge::make('Tip')->tone('tip')->variant('outline'), Badge::make('Danger')->tone('danger')->variant('outline'))->gap(pt(6)));
         self::assertSame(0, $d->count('//w:tbl'));
         self::assertSame(1, $d->count('/w:document/w:body/w:p'));
-        // each badge's text and the no-break space on each side carry the tone's border (emerald-300, red-300), with no fill
-        self::assertSame(3, $d->count('//w:r[w:rPr/w:bdr[@w:val="single" and @w:color="6ee7b7"]]'));
-        self::assertSame(3, $d->count('//w:r[w:rPr/w:bdr[@w:color="fca5a5"]]'));
-        self::assertSame(1, $d->count('//w:r[w:rPr/w:bdr][w:t="Tip"]'));
+        // each badge's run carries the tone's border (emerald-300, red-300), with no fill
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:bdr[@w:val="single" and @w:color="6ee7b7"]]'));
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:bdr[@w:color="fca5a5"]]'));
+        self::assertSame(1, $d->count('//w:r[w:rPr/w:bdr][contains(w:t, "Tip")]'));
         self::assertSame(0, $d->count('//w:r[w:rPr/w:shd]'));
         // the space between the badges has no border, so Word draws two boxes
         self::assertSame(1, $d->count('//w:r[not(w:rPr/w:bdr)][w:t=" "]'));
-        self::assertSame('6', $d->value('//w:r[w:t="Tip"]/w:rPr/w:bdr/@w:sz'));
+        self::assertSame('6', $d->value('//w:r[contains(w:t, "Tip")]/w:rPr/w:bdr/@w:sz'));
     }
 
     public function test_a_badge_with_fill_and_border_keeps_both(): void
     {
         $d = self::export(Row::make(Badge::make('Both')->tone('warning')->borderWidth(\Papercut\Value\Edges::all(pt(1)))));
         self::assertSame(0, $d->count('//w:tbl'));
-        self::assertSame(1, $d->count('//w:r[w:t="Both"][w:rPr/w:bdr[@w:color="fcd34d"]][w:rPr/w:shd[@w:fill="fef3c7"]]'));
+        self::assertSame(1, $d->count('//w:r[contains(w:t, "Both")][w:rPr/w:bdr[@w:color="fcd34d"]][w:rPr/w:shd[@w:fill="fef3c7"]]'));
     }
 
     public function test_a_badge_with_uneven_borders_keeps_its_table(): void
