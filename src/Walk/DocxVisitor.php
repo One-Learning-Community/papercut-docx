@@ -134,12 +134,25 @@ final class DocxVisitor implements TreeVisitor
         $this->regions[$region->value] = $blocks;
     }
 
+    /** What the backstop clamps (Units) and Word would draw differently: a border or a font size past what the schema takes. */
+    private function noteClamps(ComputedStyle $s, ?ComputedStyle $parent, string $path): void
+    {
+        if ($s->fontSize > Units::MAX_HALF_POINTS / 2 && ($parent === null || $parent->fontSize !== $s->fontSize)) {
+            $this->fidelity->approximated(Units::FONT_SIZE_CLAMPED, $path);
+        }
+        $widest = max($s->borderWidth->top->points, $s->borderWidth->right->points, $s->borderWidth->bottom->points, $s->borderWidth->left->points);
+        if ($widest > Units::MAX_BORDER_EIGHTHS / 8) {
+            $this->fidelity->approximated(Units::BORDER_CLAMPED, $path);
+        }
+    }
+
     public function enter(Node $node, ComputedStyle $style, Visit $at): bool
     {
         if ($this->skipping) {
             return $this->layerNode($node, $style, $at);
         }
         $parent = $this->top();
+        $this->noteClamps($style, $parent->style, $at->path());
         // The opacity in effect here: this node's times its ancestors' (a faded style carries the product).
         $opacity = ($parent->style->opacity ?? 1.0) * $style->opacity;
         if ($opacity < 1.0) {
@@ -152,7 +165,7 @@ final class DocxVisitor implements TreeVisitor
         $cols = $spec === null ? null : $this->flowColumns($spec, $style, $at);
         if ($spec !== null && $cols !== null) {
             // Word flows content through every column, so tables and boxes are sized to the narrowest one.
-            $content = min([$content, ...array_column($spec->columns($this->stack[0]->width), 'width')]);
+            $content = min([$content, ...array_column($spec->fitted($this->stack[0]->width)->columns($this->stack[0]->width), 'width')]);
         }
         $frame = new Frame($node, $style, $width, $content, $isRow);
         $frame->cols = $cols;
@@ -167,7 +180,7 @@ final class DocxVisitor implements TreeVisitor
             $this->lists->enterCell();
         }
         if ($node instanceof View && $isRow) {
-            $frame->lines = $this->widths->flexLines($node, $style, $width);
+            $frame->lines = $this->widths->flexLines($node, $style, $width, $at->path());
             foreach ($frame->lines as $line) {
                 foreach ($line as $slot) {
                     $frame->slots[$slot->index] = $slot;
@@ -176,6 +189,9 @@ final class DocxVisitor implements TreeVisitor
         } elseif ($node instanceof Table) {
             $frame->grid = TableGrid::of($node);
             $frame->columns = TableMapper::settle($this->widths->tableColumns($node, $style, $width, $at->path()), WidthResolver::tracks($node));
+            if (count($frame->columns) > Units::MAX_TABLE_COLUMNS) {
+                $this->fidelity->approximated('table with more columns than Word shows (Word shows at most ' . Units::MAX_TABLE_COLUMNS . ' columns)', $at->path());
+            }
         } elseif ($node instanceof TableRow) {
             $frame->rowIndex = $parent->rowsSeen++;
             $frame->header = $at->inHeader() && $at->parent() instanceof Table && $at->parent()->repeatsHeader();
@@ -228,7 +244,7 @@ final class DocxVisitor implements TreeVisitor
             $node instanceof Toc => $this->toc?->blocks($node, $style, $frame, $at) ?? [],
             $node instanceof PageNumber => [$this->text->pageNumber($node, $style)],
             $node instanceof Spacer => $this->spacer($node, $parent, $at),
-            $node instanceof PageBreak => [new DocxPageBreak()],
+            $node instanceof PageBreak => $parent->isRow ? [] : [new DocxPageBreak()], // ignored in a row, as in the PDF (noted by NoteReporter)
             $node instanceof Image => $this->images->image($node, $style, $frame, $at->path()),
             $node instanceof QrCode => $this->images->qr($node, $style, $frame, $at->path()),
             $node instanceof Svg => $this->images->svg($node, $style, $frame, $at->path()),
@@ -300,7 +316,7 @@ final class DocxVisitor implements TreeVisitor
             $blocks = [$this->boxes->stack($frame, $at->path()) ?? $this->boxes->box($blocks, $style, $frame->width, $at->path(), $align, $childMin)];
             $boxed = true;
         }
-        $parent->items[] = ['blocks' => $blocks, 'style' => $style, 'index' => $at->index(), 'boxed' => $boxed];
+        $parent->items[] = ['blocks' => $blocks, 'style' => $style, 'index' => $at->index(), 'boxed' => $boxed, 'picture' => $picture, 'path' => $at->path()];
     }
 
     /**
@@ -326,7 +342,15 @@ final class DocxVisitor implements TreeVisitor
         }
 
         // The section's columns span the page's content width, which is all an on-page flow has.
-        return DocxPatcher::colsXml($spec, $this->stack[0]->width);
+        $fitted = $spec->fitted($this->stack[0]->width);
+        if ($fitted->count < $spec->count) {
+            $this->fidelity->approximated(ColumnSpec::reducedFeature($fitted->count), $at->path());
+            if ($fitted->count === 1) {
+                return null;
+            }
+        }
+
+        return DocxPatcher::colsXml($fitted, $this->stack[0]->width);
     }
 
     /** @return list<BlockElement> */

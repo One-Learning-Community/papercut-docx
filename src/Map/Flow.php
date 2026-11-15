@@ -216,7 +216,7 @@ final class Flow
         $last = count($blocks) - 1;
         $p = $blocks[$last];
         if ($p instanceof Paragraph) {
-            $blocks[$last] = self::withParagraph($p, ['spaceAfterTwips' => $p->style->spaceAfterTwips + Units::tw($points)], $settled);
+            $blocks[$last] = self::withParagraph($p, ['spaceAfterTwips' => Units::clamp($p->style->spaceAfterTwips + Units::tw($points))], $settled);
         } else {
             $blocks[] = self::separator($p, $settled, $points);
         }
@@ -235,7 +235,7 @@ final class Flow
         }
         $p = $blocks[0];
         if ($p instanceof Paragraph) {
-            $blocks[0] = self::withParagraph($p, ['spaceBeforeTwips' => $p->style->spaceBeforeTwips + Units::tw($points)], $settled);
+            $blocks[0] = self::withParagraph($p, ['spaceBeforeTwips' => Units::clamp($p->style->spaceBeforeTwips + Units::tw($points))], $settled);
         } else {
             // The space is the block's own top margin, so it goes where the block goes: a heading kept with it
             // stays kept, and the space never strands at the foot of a page.

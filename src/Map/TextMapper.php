@@ -63,6 +63,10 @@ final class TextMapper
             $spanBg = Fade::over($own->background, $s->opacity, $backdrop);
             $faded = $own->color === null ? $cs : new ComputedStyle(...[...get_object_vars($cs), 'color' => Fade::over($cs->color, $s->opacity, $spanBg ?? $backdrop) ?? $cs->color]);
             $rs = $this->runStyle($faded);
+            // Only a size the span sets itself: the text's own, and what it inherits, is noted where the style was set.
+            if ($cs->fontSize > Units::MAX_HALF_POINTS / 2 && $cs->fontSize !== $s->fontSize) {
+                $this->fidelity->approximated(Units::FONT_SIZE_CLAMPED, $at->path());
+            }
             $bg = Units::fill($spanBg);
             if ($bg !== null) {
                 // php-docx writes no run shading, but writes a highlight as given: DocxPatcher turns this one into w:shd.
@@ -81,6 +85,9 @@ final class TextMapper
                     continue;
                 }
                 $run = BadgeRun::run($span->text, $rs, new ComputedStyle(...[...get_object_vars($cs), 'background' => $spanBg]), BadgeRun::widestBorder($cs));
+                if (max($cs->borderWidth->top->points, $cs->borderWidth->right->points, $cs->borderWidth->bottom->points, $cs->borderWidth->left->points) > Units::MAX_BORDER_EIGHTHS / 8) {
+                    $this->fidelity->approximated(Units::BORDER_CLAMPED, $at->path());
+                }
                 if ($cs->radius > 0.0) {
                     $this->fidelity->approximated('badge in a line', $at->path());
                 }
@@ -229,7 +236,7 @@ final class TextMapper
     public function runStyle(ComputedStyle $s): RunStyle
     {
         return new RunStyle(
-            sizeHalfPoints: (int) round($s->fontSize * 2),
+            sizeHalfPoints: Units::halfPoints($s->fontSize),
             color: Units::hex($s->color),
             fontFamily: $this->fonts->name($s->fontFamily),
             bold: $s->fontWeight >= 600,
@@ -289,7 +296,7 @@ final class TextMapper
         $size = $s->height instanceof Length ? $s->height->points * 1.25 : $s->fontSize;
 
         return new Paragraph(
-            [new Run($glyph, new RunStyle(sizeHalfPoints: (int) round($size * 2), color: Units::hex($s->borderColor)))],
+            [new Run($glyph, new RunStyle(sizeHalfPoints: Units::halfPoints($size), color: Units::hex($s->borderColor)))],
             new ParagraphStyle(lineSpacingTwips: 240, lineSpacingRule: 'auto'),
         );
     }

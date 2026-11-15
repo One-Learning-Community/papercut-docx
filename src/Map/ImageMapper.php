@@ -35,6 +35,7 @@ final class ImageMapper
     /** @return list<BlockElement> */
     public function image(Image $n, ComputedStyle $s, Frame $frame, string $path): array
     {
+        $this->roundedCorners($s, $path);
         $img = $this->load($n);
         $word = $this->raster->forWord($img->bytes, $img->mime);
         if ($word === null) {
@@ -74,6 +75,7 @@ final class ImageMapper
     /** @return list<BlockElement> */
     public function qr(QrCode $n, ComputedStyle $s, Frame $frame, string $path): array
     {
+        $this->roundedCorners($s, $path);
         // The side as the PDF sizes it: the width, else the height, else 25mm, within the space there is.
         $side = match (true) {
             $s->width instanceof Length || $s->width instanceof Percent => $frame->width,
@@ -106,6 +108,7 @@ final class ImageMapper
     /** @return list<BlockElement> */
     public function svg(Svg $n, ComputedStyle $s, Frame $frame, string $path): array
     {
+        $this->roundedCorners($s, $path);
         $doc = $n->document();
         [$w, $h] = self::size($s, $frame, max(1.0, $doc->widthPt), max(1.0, $doc->heightPt));
         $png = $this->raster->svg($doc, Raster::pixels($w), Raster::pixels($h));
@@ -148,6 +151,24 @@ final class ImageMapper
         }
 
         return new DocxImage($done[0] ?? $png, ImageFormat::Png, Units::emu($w), Units::emu($h), $alt);
+    }
+
+    /** True when a picture has no padding, border or background to wrap it in a box. */
+    public static function bare(ComputedStyle $s): bool
+    {
+        return $s->padding->horizontal() + $s->padding->vertical() + $s->borderWidth->horizontal() + $s->borderWidth->vertical() <= 0.0
+            && $s->background === null;
+    }
+
+    /**
+     * Word draws a picture square. A picture with a border, padding or background sits in a box that reports its
+     * own radius, so only a bare one is reported here.
+     */
+    private function roundedCorners(ComputedStyle $s, string $path): void
+    {
+        if ($s->radius > 0.0 && self::bare($s)) {
+            $this->fidelity->dropped('radius', $path);
+        }
     }
 
     /** Reports the opacity a picture could not take (no GD). */

@@ -12,7 +12,8 @@ use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
 use Papercut\Backend\DefaultBackend;
 use Papercut\Document;
-use Papercut\Docx\Map\{BoxMapper, ColumnsMark, EquationMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, WordFonts};
+use Papercut\Exception\InvalidStructure;
+use Papercut\Docx\Map\{BoxMapper, ColumnsMark, EquationMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, Units, WordFonts};
 use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
 use Papercut\Docx\Walk\DocxVisitor;
 use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
@@ -50,6 +51,12 @@ final class DocxExporter implements Exporter
         foreach ($pages as $i => $page) {
             if ($page->templatePage() !== null) {
                 $fidelity->dropped('PDF page template', self::pagePath($i, count($pages)));
+            }
+        }
+
+        foreach ($pages as $i => $page) {
+            if ($page->width() > Units::MAX_TWIPS / 20 || $page->height() > Units::MAX_TWIPS / 20) {
+                $fidelity->approximated('page size larger than Word allows (22 in), clamped', self::pagePath($i, count($pages)));
             }
         }
 
@@ -120,7 +127,7 @@ final class DocxExporter implements Exporter
             $registry->heading($level, new RunStyle(), new ParagraphStyle());
         }
 
-        $spec = new PatchSpec($fonts->name($root->fontFamily), (int) round($root->fontSize * 2), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? [], $columns, $visitor->columnBreaks());
+        $spec = new PatchSpec($fonts->name($root->fontFamily), Units::halfPoints($root->fontSize), $meta->lang, $date, $mirror, $numbering, $fonts->written(), $toc?->fields() ?? [], $columns, $visitor->columnBreaks());
         $inlineMaths = $equations->inlineIds();
         foreach ($visitor->maths() as $id => $omml) {
             $spec = $spec->withMath($id, $omml, isset($inlineMaths[$id]));
@@ -205,7 +212,7 @@ final class DocxExporter implements Exporter
             }
         }
         if ($groups === []) {
-            throw new \LogicException('A document needs a page');
+            throw new InvalidStructure('A document needs at least one page.');
         }
 
         $anyEven = false;

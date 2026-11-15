@@ -175,4 +175,24 @@ final class PageSetupTest extends TestCase
         $zip->close();
         unlink($file);
     }
+
+    public function test_a_page_larger_than_word_allows_is_clamped_with_one_note(): void
+    {
+        $d = self::export(Document::make(Page::size(pt(2000), pt(3000))->body(Text::make('x'))));
+        self::assertSame('31680', $d->value(self::SECT . '/w:pgSz/@w:w'));
+        self::assertSame('31680', $d->value(self::SECT . '/w:pgSz/@w:h'));
+        $notes = array_values(array_filter(self::reports(self::fidelityOf(self::$exported)), static fn (string $r): bool => str_contains($r, 'larger than Word allows')));
+        self::assertSame(['Approximated page size larger than Word allows (22 in), clamped @ page'], $notes);
+    }
+
+    /** @param list<\Papercut\Export\FidelityReport> $reports */
+    private static function fidelityOf(array $reports): \Papercut\Export\Fidelity
+    {
+        $f = self::fidelity();
+        foreach ($reports as $r) {
+            $f->approximated($r->feature, $r->path);
+        }
+
+        return $f;
+    }
 }

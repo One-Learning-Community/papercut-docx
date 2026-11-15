@@ -25,6 +25,13 @@ final class DocxExporterTest extends TestCase
         self::assertStringContainsString('Hello', DocxInspector::of($out->bytes())->bodyText());
     }
 
+    public function test_strict_export_of_scrubbed_text_keeps_the_replacement_character(): void
+    {
+        $doc = Document::make(Page::a4()->body(Text::make("caf\xff au lait"), \Papercut\Toc::make()->title("t\xff"), Text::h1('H')));
+        $out = $doc->export(new DocxExporter(), new DocxOptions(strict: true));
+        self::assertStringContainsString("caf\u{FFFD} au lait", DocxInspector::of($out->bytes())->bodyText());
+    }
+
     public function test_default_options_are_docx_options(): void
     {
         self::assertInstanceOf(DocxOptions::class, (new DocxExporter())->defaultOptions());

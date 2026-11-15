@@ -49,7 +49,7 @@ final class EquationMapper
     public function run(\Papercut\Math\Node\Node $math, ComputedStyle $s, ?string $shadingHex = null): Run
     {
         $id = count($this->maths) + 1;
-        $this->maths[$id] = OmmlWriter::oMath($math, new RunFormat(Units::hex($s->color), (int) round($s->fontSize * 2), $shadingHex));
+        $this->maths[$id] = OmmlWriter::oMath($math, new RunFormat(Units::hex($s->color), Units::halfPoints($s->fontSize), $shadingHex));
         $this->inline[$id] = true;
 
         return new Run(DocxPatcher::MATH . $id);
@@ -63,7 +63,7 @@ final class EquationMapper
             TextAlign::Right => 'right',
             default => 'left',
         };
-        $format = new RunFormat(Units::hex($s->color), (int) round($s->fontSize * 2));
+        $format = new RunFormat(Units::hex($s->color), Units::halfPoints($s->fontSize));
         $this->maths[$id] = OmmlWriter::oMathPara($n->math(), $jc, $format);
 
         // Automatic line height: a fraction or radical is taller than a line of text, and an exact height would clip it.

@@ -37,16 +37,18 @@ final class RegionsTest extends TestCase
 
     public function test_disallowed_links_throw(): void
     {
-        foreach ([
-            Text::make('x')->append(new Span('go', href: 'javascript:alert(1)')),
-            Link::to('javascript:alert(1)', Text::make('x')),
-        ] as $node) {
-            try {
-                self::export($node);
-                self::fail('expected InvalidValue');
-            } catch (InvalidValue $e) {
-                self::assertStringContainsString('javascript', $e->getMessage());
-            }
+        try {
+            self::export(Text::make('x')->append(new Span('go', href: 'javascript:alert(1)')));
+            self::fail('expected InvalidValue');
+        } catch (InvalidValue $e) {
+            self::assertStringContainsString('javascript', $e->getMessage());
+        }
+        // A block link is checked as soon as it is built.
+        try {
+            Link::to('javascript:alert(1)', Text::make('x'));
+            self::fail('expected InvalidValue');
+        } catch (InvalidValue $e) {
+            self::assertStringContainsString('javascript', $e->getMessage());
         }
     }
 

@@ -102,7 +102,7 @@ final class TocMapper
     private function runProperties(ComputedStyle $s): string
     {
         $font = htmlspecialchars($this->fonts->name($s->fontFamily), ENT_XML1 | ENT_QUOTES, 'UTF-8');
-        $size = (int) round($s->fontSize * 2);
+        $size = Units::halfPoints($s->fontSize);
 
         return '<w:rPr><w:rFonts w:ascii="' . $font . '" w:hAnsi="' . $font . '" w:cs="' . $font . '"/>'
             . ($s->fontWeight >= 600 ? '<w:b/><w:bCs/>' : '')

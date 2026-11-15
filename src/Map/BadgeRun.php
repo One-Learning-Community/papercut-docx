@@ -44,7 +44,7 @@ final class BadgeRun
             return null;
         }
 
-        return max(2, (int) round($top * 8));
+        return Units::eighths($top);
     }
 
     /** Whether a run border can draw the style's border: it has none, or the same one on every side. */
@@ -58,7 +58,7 @@ final class BadgeRun
     {
         $w = max($i->borderWidth->top->points, $i->borderWidth->right->points, $i->borderWidth->bottom->points, $i->borderWidth->left->points);
 
-        return $w > 0.0 ? max(2, (int) round($w * 8)) : null;
+        return $w > 0.0 ? Units::eighths($w) : null;
     }
 
     /**

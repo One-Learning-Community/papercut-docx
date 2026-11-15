@@ -135,7 +135,7 @@ final class BoxMapper
                 $edge($own?->bottom, $i === $last ? $outer?->bottom : null),
                 $edge($own?->left, $outer?->left),
             );
-            $padTop = $cell->style->paddingTopTwips + ($i === 0 ? Units::tw($s->borderWidth->top->points) : 0);
+            $padTop = Units::clamp($cell->style->paddingTopTwips + ($i === 0 ? Units::tw($s->borderWidth->top->points) : 0));
             // The box's fill shows through every row that has none of its own (a flat card's body).
             $fill = $cell->style->backgroundColor ?? Units::fill($s->background);
             $style = new CellStyle(...[...get_object_vars($cell->style), 'widthTwips' => $width, 'borders' => $borders, 'paddingTopTwips' => $padTop, 'backgroundColor' => $fill]);
@@ -176,7 +176,7 @@ final class BoxMapper
         $style = $s->borderStyle === BorderStyle::Dashed ? DocxBorderStyle::Dashed : DocxBorderStyle::Single;
         $color = Units::hex($s->borderColor);
         // php-docx writes w:space="0"; DocxPatcher reads the padding out of the colour and writes it as the space.
-        $side = static fn (Length $width, Length $pad): Border => new Border($style, max(2, (int) round($width->points * 8)), DocxPatcher::spaced((int) round(min(31.0, $pad->points)), $color));
+        $side = static fn (Length $width, Length $pad): Border => new Border($style, Units::eighths($width->points), DocxPatcher::spaced((int) round(min(31.0, $pad->points)), $color));
         $borders = new BorderSet(
             $side($w->top, $s->padding->top),
             $side($w->right, $s->padding->right),
@@ -189,8 +189,8 @@ final class BoxMapper
         return array_map(static fn (Paragraph $p): Paragraph => Flow::withParagraph($p, [
             'borders' => $borders,
             'shadingColor' => $fill,
-            'indentLeftTwips' => $p->style->indentLeftTwips + $left,
-            'indentRightTwips' => $p->style->indentRightTwips + $right,
+            'indentLeftTwips' => Units::clamp($p->style->indentLeftTwips + $left),
+            'indentRightTwips' => Units::clamp($p->style->indentRightTwips + $right),
         ], $settled), $blocks);
     }
 
@@ -220,7 +220,7 @@ final class BoxMapper
         }
         $style = $s->borderStyle === BorderStyle::Dashed ? DocxBorderStyle::Dashed : DocxBorderStyle::Single;
         $color = Units::hex($s->borderColor);
-        $side = static fn (Length $l): Border => $l->points > 0.0 ? new Border($style, max(2, (int) round($l->points * 8)), $color) : new Border(DocxBorderStyle::None, 0, 'auto');
+        $side = static fn (Length $l): Border => $l->points > 0.0 ? new Border($style, Units::eighths($l->points), $color) : new Border(DocxBorderStyle::None, 0, 'auto');
 
         return new BorderSet($side($w->top), $side($w->right), $side($w->bottom), $side($w->left));
     }

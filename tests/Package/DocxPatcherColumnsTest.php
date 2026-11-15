@@ -125,4 +125,15 @@ final class DocxPatcherColumnsTest extends TestCase
         $this->expectExceptionMessage('column break run not found');
         DocxPatcher::patch($bytes, new PatchSpec('Inter', 20, null, new \DateTimeImmutable('2000-01-01'), columnBreaks: 1));
     }
+
+    public function test_cols_xml_clamps_gaps_and_widths(): void
+    {
+        self::assertSame('<w:cols w:num="2" w:space="31680"/>', DocxPatcher::colsXml(new ColumnSpec(2, null, [1900.0]), 468.0));
+        $xml = DocxPatcher::colsXml(new ColumnSpec(2, [1.0, 1.0], [1900.0]), 5000.0);
+        preg_match_all('/w:(?:w|space)="(\d+)"/', $xml, $m);
+        self::assertNotSame([], $m[1]);
+        foreach ($m[1] as $v) {
+            self::assertLessThanOrEqual(31680, (int) $v);
+        }
+    }
 }

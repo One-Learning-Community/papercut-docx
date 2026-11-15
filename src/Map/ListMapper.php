@@ -148,12 +148,12 @@ final class ListMapper
                 $offset = $b->style->indentLeftTwips;
                 $b = new Paragraph($b->children, $b->style, $b->headingLevel, Numbering::marker($numId, $ilvl, $b->headingLevel));
                 if ($offset > 0) {
-                    $b = Flow::withParagraph($b, ['indentLeftTwips' => $offset + $text, 'indentFirstLineTwips' => -self::INDENT], $this->settled);
+                    $b = Flow::withParagraph($b, ['indentLeftTwips' => Units::clamp($offset + $text), 'indentFirstLineTwips' => -self::INDENT], $this->settled);
                 }
             } elseif ($k === 0 && $label !== '') {
                 $b = $this->typed($b, $label, $text);
             } else {
-                $b = Flow::withParagraph($b, ['indentLeftTwips' => $b->style->indentLeftTwips + $text], $this->settled);
+                $b = Flow::withParagraph($b, ['indentLeftTwips' => Units::clamp($b->style->indentLeftTwips + $text)], $this->settled);
             }
             $this->settled->mark($b);
             $blocks[$k] = $b;
@@ -198,7 +198,7 @@ final class ListMapper
         array_unshift($children, new Run($label . "\t", $style));
 
         return Flow::withParagraph(new Paragraph($children, $p->style, $p->headingLevel, $p->styleId), [
-            'indentLeftTwips' => $p->style->indentLeftTwips + $text,
+            'indentLeftTwips' => Units::clamp($p->style->indentLeftTwips + $text),
             'indentFirstLineTwips' => -self::INDENT,
         ], $this->settled);
     }

@@ -15,7 +15,7 @@ use Papercut\Value\Length;
  * A flex row as a borderless fixed-layout table: one grid column per item and per stretch of empty space
  * (padding, gaps, spacers, free space), at the widths WidthResolver gives the PDF.
  *
- * @phpstan-type Item array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool}
+ * @phpstan-type Item array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool, picture?: bool, path?: string}
  * @phpstan-type Segment array{x0: float, x1: float, item: ?Item, pad: array{float, float}, free: float}
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
@@ -100,7 +100,8 @@ final class RowMapper
         $edges[count($edges) - 1] = max(end($edges), $total);
         $grid = [];
         for ($i = 1, $n = count($edges); $i < $n; $i++) {
-            $grid[] = max(1, Units::tw($edges[$i]) - Units::tw($edges[$i - 1]));
+            // Widths are clamped, not the running positions: a row wider than Word allows keeps every column.
+            $grid[] = max(1, Units::clamp((int) round(min(1e6, $edges[$i]) * 20) - (int) round(min(1e6, $edges[$i - 1]) * 20)));
         }
         $col = static function (float $x) use ($edges): int {
             $best = 0;
@@ -161,8 +162,8 @@ final class RowMapper
                     Align::End => VerticalAlign::Bottom,
                     default => VerticalAlign::Top,
                 };
-                if ($own !== $s && $own->radius > 0.0) {
-                    $this->fidelity->dropped('radius', $path);
+                if ($own !== $s && $own->radius > 0.0 && !(($item['picture'] ?? false) && ImageMapper::bare($own))) {
+                    $this->fidelity->dropped('radius', $item['path'] ?? $path);
                 }
                 $out[] = new TableCell(BoxMapper::cellContent($item['blocks']), $this->boxes->cellStyle($own, $width, $span, $v, $s, [$padT, $pad[1], $padB, $pad[0]]));
             }

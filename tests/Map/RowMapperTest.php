@@ -196,4 +196,20 @@ final class RowMapperTest extends TestCase
         self::assertSame(0, self::export($row())->count(self::TBL . '/w:tr/w:trPr/w:cantSplit'));
         self::assertSame(1, self::export($row()->keepTogether())->count(self::TBL . '/w:tr/w:trPr/w:cantSplit'));
     }
+
+    public function test_a_row_wider_than_word_clamps_widths_not_positions(): void
+    {
+        $d = self::export(Page::size(pt(3000), pt(1000))->body(Row::make(
+            View::make(Text::make('a'))->width(pt(800))->background('slate-100'),
+            View::make(Text::make('b'))->width(pt(800))->background('slate-100'),
+            View::make(Text::make('c'))->width(pt(800))->background('slate-100'),
+        )));
+        $grid = self::grid($d);
+        self::assertGreaterThanOrEqual(3, count($grid));
+        foreach ($grid as $w) {
+            self::assertGreaterThan(1, $w, 'a later column collapsed to one twip');
+            self::assertLessThanOrEqual(31680, $w);
+        }
+        self::assertEqualsWithDelta(16000, $grid[2], 2.0);
+    }
 }

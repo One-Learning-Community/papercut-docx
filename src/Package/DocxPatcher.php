@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Package;
 
+use Papercut\Docx\Map\Units;
 use Papercut\Export\Fidelity;
 use Papercut\Text\{FontClass, FontInfo};
 use Papercut\Value\ColumnSpec;
@@ -30,6 +31,14 @@ final class DocxPatcher
 
     /** The text of a run that patch() replaces with an equation's OMML; the equation's id follows. See PatchSpec::withMath(). */
     public const string MATH = 'papercut-math-';
+
+    /** The children of `w:rPr` in schema order (ECMA-376 Part 1, 17.3.2.28, CT_RPr); Word's validator rejects any other order. */
+    private const array RPR_ORDER = [
+        'rStyle', 'rFonts', 'b', 'bCs', 'i', 'iCs', 'caps', 'smallCaps', 'strike', 'dstrike', 'outline', 'shadow', 'emboss',
+        'imprint', 'noProof', 'snapToGrid', 'vanish', 'webHidden', 'color', 'spacing', 'w', 'kern', 'position', 'sz', 'szCs',
+        'highlight', 'u', 'effect', 'bdr', 'shd', 'fitText', 'vertAlign', 'rtl', 'cs', 'em', 'lang', 'eastAsianLayout',
+        'specVanish', 'oMath',
+    ];
 
     /** A highlight value patch() turns into run shading in $hex (six lower-case hex digits). */
     public static function shading(string $hex): string
@@ -110,7 +119,37 @@ final class DocxPatcher
             $parts = self::fontTable($parts, $spec->fonts);
         }
 
+        foreach ($parts as $name => $xml) {
+            if (preg_match('~^word/(document|styles|header\d+|footer\d+)\.xml$~', $name) === 1) {
+                $parts[$name] = self::orderRunProperties($xml);
+            }
+        }
+
         return DeterministicZip::write($parts, $spec->time);
+    }
+
+    /**
+     * Puts the children of every `w:rPr` in schema order. php-docx writes them in its own order, which the validator
+     * rejects (underline and strike before colour and size). A `w:rPr` with content this cannot read is left alone.
+     */
+    private static function orderRunProperties(string $xml): string
+    {
+        $rank = array_flip(self::RPR_ORDER);
+
+        return (string) preg_replace_callback(
+            '~<w:rPr>((?:<w:[A-Za-z]+(?:\s[^<>]*)?/>)+)</w:rPr>~',
+            static function (array $m) use ($rank): string {
+                preg_match_all('~<w:([A-Za-z]+)(?:\s[^<>]*)?/>~', $m[1], $found, PREG_SET_ORDER);
+                foreach ($found as $i => $f) {
+                    $found[$i][] = $rank[$f[1]] ?? count($rank);
+                }
+                // Stable: equal ranks keep their written order.
+                usort($found, static fn (array $a, array $b): int => $a[2] <=> $b[2]);
+
+                return '<w:rPr>' . implode('', array_column($found, 0)) . '</w:rPr>';
+            },
+            $xml,
+        );
     }
 
     /**
@@ -120,7 +159,7 @@ final class DocxPatcher
     public static function colsXml(ColumnSpec $spec, float $widthPt): string
     {
         $sep = $spec->rule === null ? '' : ' w:sep="1"';
-        $tw = static fn (float $pt): int => (int) round($pt * 20);
+        $tw = Units::tw(...);
         if ($spec->shares === null && count(array_unique($spec->gaps)) <= 1) {
             return '<w:cols w:num="' . $spec->count . '" w:space="' . $tw($spec->gaps[0] ?? ColumnSpec::DEFAULT_GAP) . '"' . $sep . '/>';
         }

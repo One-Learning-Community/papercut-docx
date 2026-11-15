@@ -231,6 +231,24 @@ final class RasterTest extends TestCase
         self::assertGreaterThan(1_000_000, strlen($png));
     }
 
+    public function test_the_bytes_handed_to_rsvg_convert_carry_no_stylesheet_or_base(): void
+    {
+        $captured = tempnam(sys_get_temp_dir(), 'cap');
+        self::assertNotFalse($captured);
+        $this->scripts[] = $captured;
+        $binary = $this->script('cat > ' . escapeshellarg($captured) . '; exit 1');
+        $doc = SvgDocument::parse('<svg xmlns="http://www.w3.org/2000/svg" xml:base="file:///etc/" width="20" height="20">'
+            . '<?xml-stylesheet href="file:///abs/x.css" type="text/css"?><rect width="20" height="20"/></svg>');
+
+        self::rsvgOnly($binary)->svg($doc, 20, 20);
+
+        $bytes = (string) file_get_contents($captured);
+        self::assertStringContainsString('<rect', $bytes);
+        self::assertStringNotContainsString('xml-stylesheet', $bytes);
+        self::assertStringNotContainsString('x.css', $bytes);
+        self::assertStringNotContainsString('base=', $bytes);
+    }
+
     public function test_a_failing_rsvg_convert_gives_way_to_imagick(): void
     {
         $doc = SvgDocument::parse('<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="#f00"/></svg>');

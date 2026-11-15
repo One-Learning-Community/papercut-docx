@@ -17,7 +17,7 @@ use Papercut\Value\Color;
  */
 final class Frame
 {
-    /** @var list<array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool}> one entry per child; boxed: the blocks are this child's own decorated box */
+    /** @var list<array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool, picture?: bool, path?: string}> one entry per child; boxed: the blocks are this child's own decorated box */
     public array $items = [];
     /** @var list<TableRow> (Table frames) */
     public array $rows = [];
