@@ -14,7 +14,7 @@ final class MathNotesReportTest extends TestCase
     public function test_docx_export_reports_what_mathml_input_lost(): void
     {
         $messages = [];
-        $doc = Document::make(Page::a4()->body(Equation::of(Math::mathml('<math><mtable><mtr><mtd><mi>a</mi></mtd></mtr></mtable></math>'))));
+        $doc = Document::make(Page::a4()->body(Equation::of(Math::mathml('<math><mtable rowlines="solid"><mtr><mtd><mi>a</mi></mtd></mtr></mtable></math>'))));
         $doc->export(new DocxExporter(), new DocxOptions(onWarning: function (string $m) use (&$messages): void {
             $messages[] = $m;
         }));
