@@ -129,6 +129,27 @@ final class ImageMapperTest extends TestCase
         self::assertGreaterThanOrEqual(Raster::pixels(mm(20)->points), $w);
     }
 
+    public function test_raster_image_alt_is_the_picture_description(): void
+    {
+        $d = self::export(Image::bytes(self::picture('png'))->alt('Chart & "key"'));
+        self::assertSame('Chart & "key"', $d->value('//wp:docPr/@descr'));
+    }
+
+    public function test_decorative_image_has_an_empty_description(): void
+    {
+        $d = self::export(Image::bytes(self::picture('png')));
+        self::assertSame('', $d->value('//wp:docPr/@descr'));
+    }
+
+    #[RequiresPhpExtension('imagick')]
+    public function test_svg_alt_overrides_title_in_word(): void
+    {
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><title>Title</title><rect width="40" height="20"/></svg>';
+        self::assertSame('Chart', self::export(Svg::fromString($svg)->alt('Chart'))->value('//wp:docPr/@descr'));
+        self::assertSame('Title', self::export(Svg::fromString($svg))->value('//wp:docPr/@descr'));
+        self::assertSame('', self::export(Svg::fromString($svg)->alt(''))->value('//wp:docPr/@descr'));
+    }
+
     public function test_a_qr_code_without_a_width_is_25mm(): void
     {
         $d = self::export(QrCode::make('x'));

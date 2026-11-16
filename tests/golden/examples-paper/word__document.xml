@@ -2,7 +2,7 @@
     <wp:inline distB="0" distL="0" distR="0" distT="0">
         <wp:extent cx="2880000" cy="1440000"></wp:extent>
         <wp:effectExtent b="0" l="0" r="0" t="0"></wp:effectExtent>
-        <wp:docPr descr="image" id="1" name="Image"></wp:docPr>
+        <wp:docPr descr="" id="1" name="Image"></wp:docPr>
         <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"></a:graphicFrameLocks></wp:cNvGraphicFramePr>
         <a:graphic>
             <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
