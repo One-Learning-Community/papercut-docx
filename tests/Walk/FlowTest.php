@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Column, Image, PageBreak, Row, Spacer, Text};
-use Papercut\Style\Align;
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Value\Edges;
+use Quoin\{Column, Image, PageBreak, Row, Spacer, Text};
+use Quoin\Style\Align;
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Value\Edges;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class FlowTest extends TestCase
 {
@@ -52,7 +52,7 @@ final class FlowTest extends TestCase
 
     public function test_keep_together_table_keeps_each_row_with_the_next(): void
     {
-        $d = self::export(\Papercut\Table::make()->columns('1fr 1fr')->head('H1', 'H2')->row('a1', 'a2')->row('b1', 'b2')->keepTogether());
+        $d = self::export(\Quoin\Table::make()->columns('1fr 1fr')->head('H1', 'H2')->row('a1', 'a2')->row('b1', 'b2')->keepTogether());
         $row = static fn (int $i): string => "/w:document/w:body/w:tbl/w:tr[$i]";
         self::assertCount(3, $d->values('/w:document/w:body/w:tbl/w:tr'));
         self::assertCount(2, $d->values($row(1) . '//w:p/w:pPr/w:keepNext'));
@@ -62,14 +62,14 @@ final class FlowTest extends TestCase
 
     public function test_without_keep_together_table_rows_are_not_kept_together(): void
     {
-        $d = self::export(\Papercut\Table::make()->columns('1fr 1fr')->row('a1', 'a2')->row('b1', 'b2'));
+        $d = self::export(\Quoin\Table::make()->columns('1fr 1fr')->row('a1', 'a2')->row('b1', 'b2'));
         self::assertSame([], $d->values('//w:keepNext'));
     }
 
     public function test_keep_together_column_keeps_a_table_with_what_follows_inside_it(): void
     {
         $d = self::export(Column::make(
-            Column::make(\Papercut\Table::make()->columns('1fr')->row('a')->row('b'), Text::make('after'))->keepTogether(),
+            Column::make(\Quoin\Table::make()->columns('1fr')->row('a')->row('b'), Text::make('after'))->keepTogether(),
             Text::make('outside'),
         ));
         self::assertCount(2, $d->values('/w:document/w:body/w:tbl/w:tr//w:p/w:pPr/w:keepNext'));
@@ -127,7 +127,7 @@ final class FlowTest extends TestCase
 
     public function test_a_heading_stays_with_a_table_that_has_a_top_margin(): void
     {
-        $table = \Papercut\Table::make()->columns('1fr 1fr')->row('a', 'b')->margin(Edges::of(pt(12), pt(0), pt(0), pt(0)));
+        $table = \Quoin\Table::make()->columns('1fr 1fr')->row('a', 'b')->margin(Edges::of(pt(12), pt(0), pt(0), pt(0)));
         $d = self::export(Column::make(Text::h2('Sort cards'), $table));
         // The heading, then the hairline carrying the table's top margin: both keep with what follows.
         self::assertSame(2, $d->count('/w:document/w:body/w:p[following-sibling::w:tbl]'));
@@ -136,7 +136,7 @@ final class FlowTest extends TestCase
 
     public function test_a_section_heading_stays_with_the_table_after_it(): void
     {
-        $section = \Papercut\Decorator\Section::make(\Papercut\Table::make()->columns('1fr 1fr')->row('a', 'b'))->number(3)->title('Sort cards');
+        $section = \Quoin\Decorator\Section::make(\Quoin\Table::make()->columns('1fr 1fr')->row('a', 'b'))->number(3)->title('Sort cards');
         $d = self::export($section);
         // The numbered heading is a one-row Word table; the hairline carrying its bottom margin keeps it with the body.
         self::assertSame(0, $d->count('/w:document/w:body/w:tbl[1]/w:tr[last()]//w:p[not(w:pPr/w:keepNext)]'));
@@ -146,14 +146,14 @@ final class FlowTest extends TestCase
 
     public function test_a_kept_table_stays_with_a_table_after_it(): void
     {
-        $table = static fn (string $t): \Papercut\Table => \Papercut\Table::make()->columns('1fr')->row($t);
+        $table = static fn (string $t): \Quoin\Table => \Quoin\Table::make()->columns('1fr')->row($t);
         $d = self::export(Column::make($table('first')->keepWithNext(), $table('second')));
         self::assertSame(1, $d->count('/w:document/w:body/w:p[preceding-sibling::w:tbl][following-sibling::w:tbl][w:pPr/w:keepNext]'));
     }
 
     public function test_space_after_a_table_that_does_not_keep_is_not_kept(): void
     {
-        $d = self::export(Column::make(\Papercut\Table::make()->columns('1fr')->row('a'), Text::make('after'))->gap(pt(8)));
+        $d = self::export(Column::make(\Quoin\Table::make()->columns('1fr')->row('a'), Text::make('after'))->gap(pt(8)));
         self::assertSame([], $d->values('//w:keepNext'));
     }
 

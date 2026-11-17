@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, Text, View};
-use Papercut\Decorator\Card;
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Style\{Align, BorderStyle, Style};
-use Papercut\Value\Edges;
+use Quoin\{Column, Text, View};
+use Quoin\Decorator\Card;
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Style\{Align, BorderStyle, Style};
+use Quoin\Value\Edges;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class BoxMapperTest extends TestCase
 {
@@ -123,8 +123,8 @@ final class BoxMapperTest extends TestCase
     public function test_a_box_justified_to_its_end_sits_its_content_at_the_bottom(): void
     {
         $d = self::export(Column::make(
-            View::make(Text::make('low'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Papercut\Style\Justify::End),
-            View::make(Text::make('mid'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Papercut\Style\Justify::Center),
+            View::make(Text::make('low'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Quoin\Style\Justify::End),
+            View::make(Text::make('mid'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0)))->justify(\Quoin\Style\Justify::Center),
             View::make(Text::make('top'))->minHeight(pt(40))->borderWidth(Edges::of(pt(0), pt(0), pt(1), pt(0))),
         ));
         self::assertSame('bottom', $d->value('//w:tc[.//w:t="low"]/w:tcPr/w:vAlign/@w:val'));

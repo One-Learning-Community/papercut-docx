@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Column, Document, Image, Page, QrCode, Row, Svg, Table, Text};
-use Papercut\Docx\{DocxExporter, DocxOptions};
+use Quoin\{Column, Document, Image, Page, QrCode, Row, Svg, Table, Text};
+use Quoin\Docx\{DocxExporter, DocxOptions};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /** Word draws pictures square: a radius on one is reported, with or without a border. */
 final class PictureRadiusDocxTest extends TestCase

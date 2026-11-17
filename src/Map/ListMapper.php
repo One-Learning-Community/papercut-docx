@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Field, Hyperlink, Paragraph, Run, Table};
 use Dskripchenko\PhpDocx\Style\{ParagraphStyle, RunStyle, TableStyle};
-use Papercut\Export\Fidelity;
-use Papercut\Docx\Package\Numbering;
-use Papercut\ListNode;
-use Papercut\Style\ListMarker;
+use Quoin\Export\Fidelity;
+use Quoin\Docx\Package\Numbering;
+use Quoin\ListNode;
+use Quoin\Style\ListMarker;
 
 /**
  * List items as real Word numbering: the first paragraph of an item carries a reserved style id that DocxPatcher turns
  * into `w:numPr`, and Word draws the label and the hanging indent. A list with no marker only indents.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class ListMapper
 {

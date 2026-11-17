@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Package;
+namespace Quoin\Docx\Package;
 
 use Dskripchenko\PhpDocx\Style\{Orientation, PageSetup, PaperSize};
-use Papercut\Docx\Map\Units;
-use Papercut\Page;
+use Quoin\Docx\Map\Units;
+use Quoin\Page;
 
 /**
- * A Papercut page as Word's section setup, at its exact size. The paper name is kept when one matches.
+ * A page as Word's section setup, at its exact size. The paper name is kept when one matches.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class PageSetupMapper
 {
@@ -35,7 +35,7 @@ final class PageSetupMapper
             }
         }
 
-        // Papercut draws the header at the top margin and the body below it; Word draws the header at its own
+        // The page draws the header at the top margin and the body below it; Word draws the header at its own
         // distance from the edge and pushes the body below the header (the gap is spacing on its last paragraph).
         return new PageSetup(
             paperSize: $paper,

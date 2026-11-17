@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\ImageFormat;
-use Papercut\Backend\PhpPdf\GdImageConverter;
-use Papercut\Barcode\Bacon\BaconQrSvg;
-use Papercut\Exception\InvalidValue;
-use Papercut\QrCode;
-use Papercut\Value\Color;
-use Papercut\Vector\SvgDocument;
+use Quoin\Backend\PhpPdf\GdImageConverter;
+use Quoin\Barcode\Bacon\BaconQrSvg;
+use Quoin\Exception\InvalidValue;
+use Quoin\QrCode;
+use Quoin\Value\Color;
+use Quoin\Vector\SvgDocument;
 
 /**
  * Pictures for Word, which takes only PNG, JPEG, GIF and BMP and draws them as they are: other formats are
@@ -18,11 +18,11 @@ use Papercut\Vector\SvgDocument;
  * and SVG, is baked into the pixels. GD does the bitmap work; Imagick draws styled QR codes, and SVG unless
  * rsvg-convert is configured: that draws SVG properly whatever the ImageMagick build, which Imagick itself may not.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final readonly class Raster
 {
-    /** Print resolution for what Papercut draws itself (QR codes, SVG). */
+    /** Print resolution for what the core draws itself (QR codes, SVG). */
     public const int DPI = 300;
 
     public function __construct(

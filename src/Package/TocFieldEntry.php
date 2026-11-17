@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Package;
+namespace Quoin\Docx\Package;
 
 /**
  * One line of a table of contents field: a heading's text, where it links and its cached page number.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final readonly class TocFieldEntry
 {

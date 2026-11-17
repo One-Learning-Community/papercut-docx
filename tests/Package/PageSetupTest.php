@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\{Document, Page, PageBreak, Text};
-use Papercut\Docx\Tests\Support\Styles;
+use Quoin\{Document, Page, PageBreak, Text};
+use Quoin\Docx\Tests\Support\Styles;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Quoin\{mm, pt};
 
 final class PageSetupTest extends TestCase
 {
@@ -101,12 +101,12 @@ final class PageSetupTest extends TestCase
     public function test_core_properties(): void
     {
         $doc = Document::make(Page::a4()->body(Text::make('x')))
-            ->title('Invoice 42')->author('Papercut')->subject('Billing')->keywords('invoice, test')
+            ->title('Invoice 42')->author('Quoin')->subject('Billing')->keywords('invoice, test')
             ->createdAt(new \DateTimeImmutable('2026-01-02T03:04:05Z'));
         $d = self::export($doc);
         $core = 'docProps/core.xml';
         self::assertSame('Invoice 42', $d->value('//dc:title', $core));
-        self::assertSame('Papercut', $d->value('//dc:creator', $core));
+        self::assertSame('Quoin', $d->value('//dc:creator', $core));
         self::assertSame('Billing', $d->value('//dc:subject', $core));
         self::assertSame('invoice, test', $d->value('//cp:keywords', $core));
         self::assertSame('2026-01-02T03:04:05Z', $d->value('//dcterms:created', $core));
@@ -160,7 +160,7 @@ final class PageSetupTest extends TestCase
 
     public function test_mirrored_docx_opens(): void
     {
-        $bytes = Document::make(Page::a4()->mirrorMargins()->body(Text::make('x')))->export(new \Papercut\Docx\DocxExporter())->bytes();
+        $bytes = Document::make(Page::a4()->mirrorMargins()->body(Text::make('x')))->export(new \Quoin\Docx\DocxExporter())->bytes();
         $file = (string) tempnam(sys_get_temp_dir(), 'docx');
         file_put_contents($file, $bytes);
         $zip = new \ZipArchive();
@@ -185,8 +185,8 @@ final class PageSetupTest extends TestCase
         self::assertSame(['Approximated page size larger than Word allows (22 in), clamped @ page'], $notes);
     }
 
-    /** @param list<\Papercut\Export\FidelityReport> $reports */
-    private static function fidelityOf(array $reports): \Papercut\Export\Fidelity
+    /** @param list<\Quoin\Export\FidelityReport> $reports */
+    private static function fidelityOf(array $reports): \Quoin\Export\Fidelity
     {
         $f = self::fidelity();
         foreach ($reports as $r) {

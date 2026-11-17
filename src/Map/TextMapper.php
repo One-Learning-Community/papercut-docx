@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{Bookmark, Field, Hyperlink, InlineElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle, RunStyle};
-use Papercut\{Node, PageNumber, Text, View};
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Exception\InvalidValue;
-use Papercut\Export\Fidelity;
-use Papercut\Paint\Link;
-use Papercut\Style\{ComputedStyle, StyleResolver, TextAlign, Theme, WhiteSpace};
-use Papercut\Text\{FontClass, FontInfo};
-use Papercut\Tree\Visit;
-use Papercut\Value\{Color, Length};
+use Quoin\{Node, PageNumber, Text, View};
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Exception\InvalidValue;
+use Quoin\Export\Fidelity;
+use Quoin\Paint\Link;
+use Quoin\Style\{ComputedStyle, StyleResolver, TextAlign, Theme, WhiteSpace};
+use Quoin\Text\{FontClass, FontInfo};
+use Quoin\Tree\Visit;
+use Quoin\Value\{Color, Length};
 
 /**
  * Text, spans and page numbers as Word paragraphs and runs.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class TextMapper
 {

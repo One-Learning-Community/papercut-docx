@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Column, Document, Image, Page, Row, Table, TableCell, Text, View};
-use Papercut\Docx\{DocxExporter, DocxOptions};
-use Papercut\Docx\Tests\Support\OoxmlValidator;
-use Papercut\Markup\Markup;
+use Quoin\{Column, Document, Image, Page, Row, Table, TableCell, Text, View};
+use Quoin\Docx\{DocxExporter, DocxOptions};
+use Quoin\Docx\Tests\Support\OoxmlValidator;
+use Quoin\Markup\Markup;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Quoin\{mm, pt};
 
 /** The final fix wave in Word: notes that every format reports, and the backstop clamps that used to be silent. */
 final class ReviewFixDocxTest extends TestCase
@@ -86,7 +86,7 @@ final class ReviewFixDocxTest extends TestCase
         self::assertSame(1, self::noteCount($notes, 'font size larger than Word allows (1638pt), clamped'), implode("\n", $notes));
         OoxmlValidator::assertValid($bytes);
 
-        [, $span] = self::export(Document::make(Page::a4()->body(Text::spans(new \Papercut\Span('big', new \Papercut\Style\Style(fontSize: pt(2000)))))));
+        [, $span] = self::export(Document::make(Page::a4()->body(Text::spans(new \Quoin\Span('big', new \Quoin\Style\Style(fontSize: pt(2000)))))));
         self::assertSame(1, self::noteCount($span, 'font size larger than Word allows'), implode("\n", $span));
 
         [, $fine] = self::export(Document::make(Page::a4()->body(Text::make('x')->size(pt(400)))));
@@ -95,8 +95,8 @@ final class ReviewFixDocxTest extends TestCase
 
     public function test_a_badge_border_wider_than_word_allows_is_noted_once(): void
     {
-        $badge = new \Papercut\Span('tag', new \Papercut\Style\Style(borderWidth: \Papercut\Value\Edges::all(pt(20)), padding: \Papercut\Value\Edges::all(pt(2))));
-        [$bytes, $notes] = self::export(Document::make(Page::a4()->body(Text::spans($badge, new \Papercut\Span(' and '), $badge))));
+        $badge = new \Quoin\Span('tag', new \Quoin\Style\Style(borderWidth: \Quoin\Value\Edges::all(pt(20)), padding: \Quoin\Value\Edges::all(pt(2))));
+        [$bytes, $notes] = self::export(Document::make(Page::a4()->body(Text::spans($badge, new \Quoin\Span(' and '), $badge))));
         self::assertSame(1, self::noteCount($notes, 'border wider than Word allows (12pt), clamped'), implode("\n", $notes));
         OoxmlValidator::assertValid($bytes);
     }

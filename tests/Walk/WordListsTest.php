@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
 use Dskripchenko\PhpDocx\Element\Paragraph;
 use Dskripchenko\PhpDocx\Style\ParagraphStyle;
-use Papercut\Decorator\Blockquote;
-use Papercut\Docx\Map\ListMapper;
-use Papercut\Docx\Package\Numbering;
-use Papercut\Export\{ExportOptions, Fidelity};
-use function Papercut\pt;
-use Papercut\Markup\Markup;
-use Papercut\Value\Percent;
-use Papercut\{Column, Document, ListItem, ListNode, Page, Row, Table, TableCell, Text, View};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Style\ListMarker;
+use Quoin\Decorator\Blockquote;
+use Quoin\Docx\Map\ListMapper;
+use Quoin\Docx\Package\Numbering;
+use Quoin\Export\{ExportOptions, Fidelity};
+use function Quoin\pt;
+use Quoin\Markup\Markup;
+use Quoin\Value\Percent;
+use Quoin\{Column, Document, ListItem, ListNode, Page, Row, Table, TableCell, Text, View};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Style\ListMarker;
 use PHPUnit\Framework\TestCase;
 
 final class WordListsTest extends TestCase
@@ -32,7 +32,7 @@ final class WordListsTest extends TestCase
         self::assertSame(['0', '0', '0'], $d->values('//w:numPr/w:ilvl/@w:val'));
         self::assertSame(0, $d->count('//w:tab'));
         self::assertSame('a b c', trim(preg_replace('/\s+/', ' ', $d->bodyText()) ?? ''));
-        self::assertSame(0, $d->count('//w:pStyle[starts-with(@w:val, "papercut-num-")]'));
+        self::assertSame(0, $d->count('//w:pStyle[starts-with(@w:val, "quoin-num-")]'));
     }
 
     public function test_adjacent_lists_restart(): void
@@ -414,10 +414,10 @@ final class WordListsTest extends TestCase
             Text::make('between'),
             ListNode::ordered('epsilon', ListItem::make(Text::make('zeta')), ListItem::make(Text::make('large')->size(pt(24)))),
         )));
-        $dir = sys_get_temp_dir() . '/papercut-lo-' . bin2hex(random_bytes(6));
+        $dir = sys_get_temp_dir() . '/quoin-lo-' . bin2hex(random_bytes(6));
         mkdir($dir);
         try {
-            file_put_contents("$dir/lists.docx", $doc->export(new \Papercut\Docx\DocxExporter())->bytes());
+            file_put_contents("$dir/lists.docx", $doc->export(new \Quoin\Docx\DocxExporter())->bytes());
             $proc = proc_open(
                 [$soffice, '-env:UserInstallation=file://' . $dir . '/lo-profile', '--headless', '--convert-to', 'pdf', '--outdir', $dir, "$dir/lists.docx"],
                 [1 => ['file', "$dir/soffice.out", 'w'], 2 => ['file', "$dir/soffice.err", 'w']],

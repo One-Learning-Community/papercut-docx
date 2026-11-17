@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Hyperlink, InlineElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\RunStyle;
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Style\{BorderStyle, ComputedStyle};
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Style\{BorderStyle, ComputedStyle};
 
 /**
  * The one place a badge becomes Word text: a shaded run with a run border, two no-break spaces of padding on each
@@ -15,7 +15,7 @@ use Papercut\Style\{BorderStyle, ComputedStyle};
  * corners stay square. A badge with no border of its own gets a border in its fill color, which gives it a little
  * height in Word and LibreOffice; Google Docs ignores run borders and shows the shading alone.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class BadgeRun
 {

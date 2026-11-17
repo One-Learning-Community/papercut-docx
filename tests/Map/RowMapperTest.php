@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, Page, Row, Spacer, Text, View};
-use Papercut\Docx\Map\{BoxMapper, RowMapper};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Export\ExportOptions;
-use Papercut\Layout\WidthResolver;
-use Papercut\Style\Align;
+use Quoin\{Column, Page, Row, Spacer, Text, View};
+use Quoin\Docx\Map\{BoxMapper, RowMapper};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Export\ExportOptions;
+use Quoin\Layout\WidthResolver;
+use Quoin\Style\Align;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Quoin\{mm, pt};
 
 /** @phpstan-import-type Segment from RowMapper */
 final class RowMapperTest extends TestCase

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Support;
+namespace Quoin\Docx\Tests\Support;
 
-use Papercut\Export\{ExportOptions, Fidelity, FidelityReport};
-use Papercut\{Component, Document, Node, Page};
-use Papercut\Docx\DocxExporter;
-use Papercut\Style\{ComputedStyle, StyleResolver, Theme};
-use Papercut\Tree\{Region, Visit};
+use Quoin\Export\{ExportOptions, Fidelity, FidelityReport};
+use Quoin\{Component, Document, Node, Page};
+use Quoin\Docx\DocxExporter;
+use Quoin\Style\{ComputedStyle, StyleResolver, Theme};
+use Quoin\Tree\{Region, Visit};
 
 /** Small helpers for mapper tests: a node's computed style, a visit, a recording Fidelity. */
 trait Styles

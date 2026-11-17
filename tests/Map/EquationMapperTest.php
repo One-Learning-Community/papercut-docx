@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, Document, Equation, ListItem, ListNode, Page, Row, Table, Text};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Math\Math;
+use Quoin\{Column, Document, Equation, ListItem, ListNode, Page, Row, Table, Text};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Math\Math;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class EquationMapperTest extends TestCase
 {
-    private static function export(\Papercut\Node ...$body): DocxInspector
+    private static function export(\Quoin\Node ...$body): DocxInspector
     {
         return DocxInspector::of(Document::make(Page::a4()->body(Column::make(...$body)))->export(new DocxExporter())->bytes());
     }
@@ -53,12 +53,12 @@ final class EquationMapperTest extends TestCase
         // The margins are the paragraph's spacing.
         self::assertSame(1, self::n($xp, '//w:p[m:oMathPara]/w:pPr/w:spacing[@w:before="200"]'));
         self::assertSame(1, self::n($xp, '//w:p[m:oMathPara]/w:pPr/w:spacing[@w:after="200"]'));
-        self::assertStringNotContainsString('papercut-math', $d->part('word/document.xml'));
+        self::assertStringNotContainsString('quoin-math', $d->part('word/document.xml'));
     }
 
     public function test_centered_equation_jc(): void
     {
-        $d = self::export(self::frac()->textAlign(\Papercut\Style\TextAlign::Center), self::frac()->textAlign(\Papercut\Style\TextAlign::Right), self::frac()->textAlign(\Papercut\Style\TextAlign::Justify));
+        $d = self::export(self::frac()->textAlign(\Quoin\Style\TextAlign::Center), self::frac()->textAlign(\Quoin\Style\TextAlign::Right), self::frac()->textAlign(\Quoin\Style\TextAlign::Justify));
         self::assertSame(['center', 'right', 'left'], self::vals(self::math($d), '//m:jc/@m:val'));
     }
 

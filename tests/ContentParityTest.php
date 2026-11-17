@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, ListNode, Node, Page, Text};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Map\ListMapper;
-use Papercut\Docx\Tests\Support\{Documents, DocxInspector};
-use Papercut\Style\{ComputedStyle, StyleResolver, Theme};
-use Papercut\Tree\{Region, TreeVisitor, TreeWalker, Visit};
+use Quoin\{Document, ListNode, Node, Page, Text};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Map\ListMapper;
+use Quoin\Docx\Tests\Support\{Documents, DocxInspector};
+use Quoin\Style\{ComputedStyle, StyleResolver, Theme};
+use Quoin\Tree\{Region, TreeVisitor, TreeWalker, Visit};
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /**
  * The words pdftotext finds in the PDF equal the words of the DOCX body, counted with multiplicity (body only).
@@ -45,7 +45,7 @@ final class ContentParityTest extends TestCase
     public function test_pdf_and_docx_have_the_same_word_multisets(string $file): void
     {
         $source = Documents::load($file);
-        self::assertStringNotContainsString('papercut-math', DocxInspector::of($source->export(new DocxExporter())->bytes())->part('word/document.xml'));
+        self::assertStringNotContainsString('quoin-math', DocxInspector::of($source->export(new DocxExporter())->bytes())->part('word/document.xml'));
         $pages = array_map(static fn (Page $p): Page => Page::size(pt($p->width()), pt($p->height()))->margin($p->margins())->body(...self::withoutEquations($p->bodyNodes())), $source->pages());
         $document = Document::make(...$pages);
 
@@ -200,14 +200,14 @@ final class ContentParityTest extends TestCase
      * stays). The PDF sets a formula's letters as mathematical italics and the other formats hold them as math, so formula words
      * are not comparable. This helper exists in the core package's tests too: the two packages share no test code.
      *
-     * @param list<\Papercut\Node|\Papercut\Component> $nodes
-     * @return list<\Papercut\Node|\Papercut\Component>
+     * @param list<\Quoin\Node|\Quoin\Component> $nodes
+     * @return list<\Quoin\Node|\Quoin\Component>
      */
     private static function withoutEquations(array $nodes): array
     {
         $out = [];
         foreach ($nodes as $n) {
-            if ($n instanceof \Papercut\Equation) {
+            if ($n instanceof \Quoin\Equation) {
                 continue;
             }
             $out[] = self::withoutInlineMath($n);
@@ -216,29 +216,29 @@ final class ContentParityTest extends TestCase
         return $out;
     }
 
-    private static function withoutInlineMath(\Papercut\Node|\Papercut\Component $n): \Papercut\Node|\Papercut\Component
+    private static function withoutInlineMath(\Quoin\Node|\Quoin\Component $n): \Quoin\Node|\Quoin\Component
     {
-        if ($n instanceof \Papercut\Text) {
-            $spans = array_values(array_filter($n->spanList(), static fn (\Papercut\Span $s): bool => $s->math === null));
+        if ($n instanceof \Quoin\Text) {
+            $spans = array_values(array_filter($n->spanList(), static fn (\Quoin\Span $s): bool => $s->math === null));
 
             return count($spans) === count($n->spanList()) ? $n : self::with($n, 'spans', $spans);
         }
-        if ($n instanceof \Papercut\Table) {
+        if ($n instanceof \Quoin\Table) {
             $n = self::with($n, 'headerRows', array_map(self::row(...), $n->headerRows()));
 
             return self::with($n, 'bodyRows', array_map(self::row(...), $n->bodyRows()));
         }
-        if ($n instanceof \Papercut\View) {
+        if ($n instanceof \Quoin\View) {
             return $n->withChildren(...self::withoutEquations($n->children()));
         }
 
         return $n;
     }
 
-    private static function row(\Papercut\TableRow $row): \Papercut\TableRow
+    private static function row(\Quoin\TableRow $row): \Quoin\TableRow
     {
         return self::with($row, 'cells', array_map(
-            static fn (\Papercut\TableCell $c): \Papercut\TableCell => self::with($c, 'children', self::withoutEquations($c->children())),
+            static fn (\Quoin\TableCell $c): \Quoin\TableCell => self::with($c, 'children', self::withoutEquations($c->children())),
             $row->cells(),
         ));
     }

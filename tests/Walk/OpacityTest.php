@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Column, Image, Span, Text};
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Style\Style;
+use Quoin\{Column, Image, Span, Text};
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Style\Style;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /** Opacity fades a node and everything in it, as in the PDF: colors are blended onto white. */
 final class OpacityTest extends TestCase
@@ -27,7 +27,7 @@ final class OpacityTest extends TestCase
     public function test_a_faded_box_fades_its_fill_border_and_content(): void
     {
         $d = self::export(Column::make(
-            Text::spans(new Span('plain'), new Span('red', Style::make(color: \Papercut\Value\Color::hex('#ff0000')))),
+            Text::spans(new Span('plain'), new Span('red', Style::make(color: \Quoin\Value\Color::hex('#ff0000')))),
         )->padding(pt(4))->background('#000000')->border(pt(1), '#0000ff')->color('#000000')->opacity(0.5));
         self::assertSame([], self::exportedReports());
         self::assertSame('808080', $d->value('//w:tc/w:tcPr/w:shd/@w:fill'));

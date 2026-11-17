@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx;
+namespace Quoin\Docx;
 
-use Papercut\Export\{ExportOptions, FidelityReport};
-use Papercut\Style\Theme;
-use Papercut\Text\FontSet;
+use Quoin\Export\{ExportOptions, FidelityReport};
+use Quoin\Style\Theme;
+use Quoin\Text\FontSet;
 
 /**
  * Options for Word export.

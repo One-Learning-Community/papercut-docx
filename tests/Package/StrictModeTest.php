@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\{Column, Text};
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Exception\UnsupportedFeature;
+use Quoin\{Column, Text};
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Exception\UnsupportedFeature;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class StrictModeTest extends TestCase
 {

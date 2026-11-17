@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Image, Page, Row, Table, TableCell, Text, Toc};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Export\{ExportOptions, FidelityReport};
-use Papercut\Style\Style;
+use Quoin\{Document, Image, Page, Row, Table, TableCell, Text, Toc};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Export\{ExportOptions, FidelityReport};
+use Quoin\Style\Style;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class TocDocxTest extends TestCase
 {
@@ -47,7 +47,7 @@ final class TocDocxTest extends TestCase
         // The field spans the entries: begin in the first, end in the last.
         self::assertSame(1, $d->count('//w:p[w:r/w:fldChar/@w:fldCharType="begin"][.//w:t="Alpha"]'));
         self::assertSame(1, $d->count('//w:p[w:r/w:fldChar/@w:fldCharType="end"][.//w:t="Gamma"]'));
-        self::assertStringNotContainsString('papercut-toc-marker', $xml);
+        self::assertStringNotContainsString('quoin-toc-marker', $xml);
     }
 
     public function test_headings_that_are_entries_carry_a_bookmark(): void
@@ -66,7 +66,7 @@ final class TocDocxTest extends TestCase
     {
         $d = self::export(Document::make(
             Page::a4()->body(Toc::make()->levels(1, 2)),
-            Page::a4()->body(Text::h1('Unit 1'), \Papercut\Markup\Markup::html('<h2>Warm-up</h2><p>Read.</p>', new \Papercut\Markup\MarkupOptions(toc: false))),
+            Page::a4()->body(Text::h1('Unit 1'), \Quoin\Markup\Markup::html('<h2>Warm-up</h2><p>Read.</p>', new \Quoin\Markup\MarkupOptions(toc: false))),
         ));
 
         self::assertSame(['Unit 1'], $d->values('//w:hyperlink/w:r[1]/w:t'));
@@ -79,8 +79,8 @@ final class TocDocxTest extends TestCase
         $d = self::export(Document::make(
             Page::a4()->body(Toc::make()->levels(1, 2)),
             Page::a4()->body(
-                \Papercut\Decorator\Section::make('one')->title('Units')->number(2)->heading(1),
-                \Papercut\Decorator\Card::make('two')->title('Unit 1')->heading(2),
+                \Quoin\Decorator\Section::make('one')->title('Units')->number(2)->heading(1),
+                \Quoin\Decorator\Card::make('two')->title('Unit 1')->heading(2),
             ),
         ));
 
@@ -155,7 +155,7 @@ final class TocDocxTest extends TestCase
         self::assertStringContainsString('Contents', $xml);
         self::assertStringNotContainsString('TOC \o', $xml);
         self::assertStringNotContainsString('fldChar', $xml);
-        self::assertStringNotContainsString('papercut-toc-marker', $xml);
+        self::assertStringNotContainsString('quoin-toc-marker', $xml);
     }
 
     public function test_a_body_that_overflows_a_page_exports_without_a_warning(): void
@@ -187,7 +187,7 @@ final class TocDocxTest extends TestCase
 
         self::assertSame(1, substr_count($xml, 'TOC \o "1-2" \h \z \u'));
         self::assertSame(['Alpha', 'Beta'], $d->values('//w:hyperlink/w:r[1]/w:t'));
-        self::assertStringNotContainsString('papercut-toc-marker', $xml);
+        self::assertStringNotContainsString('quoin-toc-marker', $xml);
     }
 
     public function test_a_table_of_contents_in_an_auto_width_table_column_is_written(): void
@@ -225,7 +225,7 @@ final class TocDocxTest extends TestCase
     public function test_page_numbers_off_skips_the_layout_and_writes_the_field_without_them(): void
     {
         $before = DocxExporter::$layoutPasses;
-        $d = self::export(self::threeSections(Toc::make()->levels(1, 2)), new \Papercut\Docx\DocxOptions(tocPageNumbers: false));
+        $d = self::export(self::threeSections(Toc::make()->levels(1, 2)), new \Quoin\Docx\DocxOptions(tocPageNumbers: false));
         self::assertSame($before, DocxExporter::$layoutPasses);
 
         self::assertSame(['Alpha', 'Beta', 'Beta sub', 'Gamma'], $d->values('//w:hyperlink/w:r[1]/w:t'));
@@ -235,9 +235,9 @@ final class TocDocxTest extends TestCase
 
     public function test_docx_options_keep_their_setting_through_from(): void
     {
-        $off = new \Papercut\Docx\DocxOptions(tocPageNumbers: false);
-        self::assertFalse(\Papercut\Docx\DocxOptions::from($off)->tocPageNumbers);
-        self::assertTrue(\Papercut\Docx\DocxOptions::from(new ExportOptions())->tocPageNumbers);
+        $off = new \Quoin\Docx\DocxOptions(tocPageNumbers: false);
+        self::assertFalse(\Quoin\Docx\DocxOptions::from($off)->tocPageNumbers);
+        self::assertTrue(\Quoin\Docx\DocxOptions::from(new ExportOptions())->tocPageNumbers);
     }
 
     public function test_the_page_layout_stops_after_the_last_listed_heading(): void

@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, ImageFormat};
-use Papercut\Backend\Backend;
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\{Fidelity, LoadedImage};
-use Papercut\{Image, QrCode, Svg};
-use Papercut\Style\{ComputedStyle, ImageFit};
-use Papercut\Value\{Length, Percent};
+use Quoin\Backend\Backend;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\{Fidelity, LoadedImage};
+use Quoin\{Image, QrCode, Svg};
+use Quoin\Style\{ComputedStyle, ImageFit};
+use Quoin\Value\{Length, Percent};
 
-use function Papercut\mm;
+use function Quoin\mm;
 
 /**
  * Images, QR codes and SVG as inline pictures at the size the PDF gives them. What the PDF does to a
  * picture (cover cropping, opacity) is drawn into it; see Raster.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class ImageMapper
 {
@@ -142,7 +142,7 @@ final class ImageMapper
         };
     }
 
-    /** A PNG Papercut drew, with the node's opacity applied. */
+    /** A PNG drawn by the core, with the node's opacity applied. */
     private function picture(string $png, ComputedStyle $s, float $w, float $h, string $path, ?string $alt): DocxImage
     {
         $done = $this->raster->finish($png, 'image/png', $w, $h, false, $s->opacity);

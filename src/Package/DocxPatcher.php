@@ -2,35 +2,35 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Package;
+namespace Quoin\Docx\Package;
 
-use Papercut\Docx\Map\Units;
-use Papercut\Export\Fidelity;
-use Papercut\Text\{FontClass, FontInfo};
-use Papercut\Value\ColumnSpec;
+use Quoin\Docx\Map\Units;
+use Quoin\Export\Fidelity;
+use Quoin\Text\{FontClass, FontInfo};
+use Quoin\Value\ColumnSpec;
 
 /**
- * Fixes php-docx's output where it can't express what Papercut needs: `left`/`right` alignment
+ * Fixes php-docx's output where it can't express what the export needs: `left`/`right` alignment
  * (Google Docs ignores `start`/`end`), run shading in any color, the theme's default font, and the document language.
  * It edits the exact markup php-docx writes and throws when that markup changes, so an upgrade fails loudly.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class DocxPatcher
 {
     private const string DOC_DEFAULTS = '<w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault>';
 
     /** Marks a run's highlight as run shading in a color of its own; see shading(). */
-    private const string SHADING = 'papercut-shd-';
+    private const string SHADING = 'quoin-shd-';
 
     /** Marks a border color as also carrying the border's space, in points; see spaced(). */
-    private const string SPACE = 'papercut-sp';
+    private const string SPACE = 'quoin-sp';
 
     /** The text of a run that patch() turns into a column break (`w:br w:type="column"`); see columnBreak(). */
-    public const string COLUMN_BREAK = 'papercut-column-break';
+    public const string COLUMN_BREAK = 'quoin-column-break';
 
     /** The text of a run that patch() replaces with an equation's OMML; the equation's id follows. See PatchSpec::withMath(). */
-    public const string MATH = 'papercut-math-';
+    public const string MATH = 'quoin-math-';
 
     /** The children of `w:rPr` in schema order (ECMA-376 Part 1, 17.3.2.28, CT_RPr); Word's validator rejects any other order. */
     private const array RPR_ORDER = [
@@ -231,7 +231,7 @@ final class DocxPatcher
     }
 
     /**
-     * Replaces each equation's marker run (`<w:r>` holding only `papercut-math-<id>`) with its OMML, and declares the
+     * Replaces each equation's marker run (`<w:r>` holding only `quoin-math-<id>`) with its OMML, and declares the
      * math namespace on the root of every part that got one. A declared equation whose marker is gone, or a marker
      * with no equation, throws: the equation would silently vanish or leak into the document as text.
      *
@@ -595,7 +595,7 @@ final class DocxPatcher
     /** @return array<string, string> entries in archive order */
     private static function read(string $bytes): array
     {
-        $file = tempnam(sys_get_temp_dir(), 'papercut-docx');
+        $file = tempnam(sys_get_temp_dir(), 'quoin-docx');
         if ($file === false) {
             throw new \RuntimeException('Could not create a temporary file');
         }

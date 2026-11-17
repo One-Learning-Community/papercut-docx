@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
 use PHPUnit\Framework\TestCase;
 

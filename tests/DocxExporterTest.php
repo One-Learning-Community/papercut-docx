@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\Document;
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\DocxOptions;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Export\ExportOptions;
-use Papercut\Page;
-use Papercut\Text;
+use Quoin\Document;
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\DocxOptions;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Export\ExportOptions;
+use Quoin\Page;
+use Quoin\Text;
 use PHPUnit\Framework\TestCase;
 
 final class DocxExporterTest extends TestCase
@@ -27,7 +27,7 @@ final class DocxExporterTest extends TestCase
 
     public function test_strict_export_of_scrubbed_text_keeps_the_replacement_character(): void
     {
-        $doc = Document::make(Page::a4()->body(Text::make("caf\xff au lait"), \Papercut\Toc::make()->title("t\xff"), Text::h1('H')));
+        $doc = Document::make(Page::a4()->body(Text::make("caf\xff au lait"), \Quoin\Toc::make()->title("t\xff"), Text::h1('H')));
         $out = $doc->export(new DocxExporter(), new DocxOptions(strict: true));
         self::assertStringContainsString("caf\u{FFFD} au lait", DocxInspector::of($out->bytes())->bodyText());
     }

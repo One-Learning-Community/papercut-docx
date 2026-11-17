@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Map\Raster;
-use Papercut\Docx\Tests\Support\{Documents, DocxInspector};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Map\Raster;
+use Quoin\Docx\Tests\Support\{Documents, DocxInspector};
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

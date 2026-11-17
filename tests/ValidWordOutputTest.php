@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Column, Component, Document, Node, Page, Text};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\{DocxInspector, OoxmlValidator};
-use Papercut\Markup\{Markup, MarkupOptions, StyleMode};
+use Quoin\{Column, Component, Document, Node, Page, Text};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\{DocxInspector, OoxmlValidator};
+use Quoin\Markup\{Markup, MarkupOptions, StyleMode};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class ValidWordOutputTest extends TestCase
 {
@@ -86,7 +86,7 @@ final class ValidWordOutputTest extends TestCase
 
     public function test_summed_indents_and_borders_of_a_shaded_box_are_clamped(): void
     {
-        $block = \Papercut\Decorator\CodeBlock::make("a\nb")->margin(pt(1000))->padding(pt(1000))->border(pt(500));
+        $block = \Quoin\Decorator\CodeBlock::make("a\nb")->margin(pt(1000))->padding(pt(1000))->border(pt(500));
         $bytes = self::docx($block);
         $d = DocxInspector::of($bytes);
         self::assertTwipsWithin($d, ['//w:ind/@w:left', '//w:ind/@w:right']);

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\{Column, Document, Page, Text};
-use Papercut\Docx\Package\{DocxPatcher, Numbering, PatchSpec, TocField, TocFieldEntry};
-use Papercut\Export\{ExportOptions, Fidelity, FidelityLevel, FidelityReport};
-use Papercut\Style\ListMarker;
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\{Column, Document, Page, Text};
+use Quoin\Docx\Package\{DocxPatcher, Numbering, PatchSpec, TocField, TocFieldEntry};
+use Quoin\Export\{ExportOptions, Fidelity, FidelityLevel, FidelityReport};
+use Quoin\Style\ListMarker;
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
 use Dskripchenko\PhpDocx\{Document as DocxDocument, Section};
 use Dskripchenko\PhpDocx\Element\{Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\ParagraphStyle;
@@ -46,7 +46,7 @@ final class DocxPatcherTest extends TestCase
 
     public function test_a_missing_anchor_fails_loudly(): void
     {
-        $bytes = Document::make(Page::a4()->body(Text::make('x')))->export(new \Papercut\Docx\DocxExporter())->bytes();
+        $bytes = Document::make(Page::a4()->body(Text::make('x')))->export(new \Quoin\Docx\DocxExporter())->bytes();
         $zip = new \ZipArchive();
         $file = (string) tempnam(sys_get_temp_dir(), 'docx');
         file_put_contents($file, $bytes);
@@ -63,7 +63,7 @@ final class DocxPatcherTest extends TestCase
 
     public function test_a_shading_marker_left_unpatched_fails_loudly(): void
     {
-        $bytes = Document::make(Page::a4()->body(Text::make('x')))->export(new \Papercut\Docx\DocxExporter())->bytes();
+        $bytes = Document::make(Page::a4()->body(Text::make('x')))->export(new \Quoin\Docx\DocxExporter())->bytes();
         $zip = new \ZipArchive();
         $file = (string) tempnam(sys_get_temp_dir(), 'docx');
         file_put_contents($file, $bytes);
@@ -285,7 +285,7 @@ final class DocxPatcherTest extends TestCase
         $out = DocxPatcher::patch(self::marked(null, new ParagraphStyle(widowControl: true, spaceAfterTwips: 100)), self::numSpec(self::numbering()));
         $doc = self::part($out, 'word/document.xml');
         self::assertStringContainsString('<w:pPr><w:widowControl/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr><w:spacing', $doc);
-        self::assertStringNotContainsString('papercut-num-', $doc);
+        self::assertStringNotContainsString('quoin-num-', $doc);
         self::assertStringNotContainsString('<w:pStyle', substr($doc, strpos($doc, '<w:body>') ?: 0, 200));
     }
 
@@ -299,17 +299,17 @@ final class DocxPatcherTest extends TestCase
 
     public function test_text_mentioning_the_marker_prefix_is_fine(): void
     {
-        $raw = self::raw(new Section([new Paragraph([new Run('see papercut-num-3-0')]), new Paragraph([new Run('x')], new ParagraphStyle(), null, Numbering::marker(1, 0, null))]));
+        $raw = self::raw(new Section([new Paragraph([new Run('see quoin-num-3-0')]), new Paragraph([new Run('x')], new ParagraphStyle(), null, Numbering::marker(1, 0, null))]));
         $out = DocxPatcher::patch($raw, self::numSpec(self::numbering()));
-        self::assertStringContainsString('see papercut-num-3-0', self::part($out, 'word/document.xml'));
+        self::assertStringContainsString('see quoin-num-3-0', self::part($out, 'word/document.xml'));
     }
 
     public function test_text_with_the_quoted_marker_survives(): void
     {
-        $raw = self::raw(new Section([new Paragraph([new Run('see w:val="papercut-num-1-0"')]), new Paragraph([new Run('x')], new ParagraphStyle(), null, Numbering::marker(1, 0, null))]));
+        $raw = self::raw(new Section([new Paragraph([new Run('see w:val="quoin-num-1-0"')]), new Paragraph([new Run('x')], new ParagraphStyle(), null, Numbering::marker(1, 0, null))]));
         $out = DocxPatcher::patch($raw, self::numSpec(self::numbering()));
         $doc = self::part($out, 'word/document.xml');
-        self::assertStringContainsString('see w:val=&quot;papercut-num-1-0&quot;', $doc);
+        self::assertStringContainsString('see w:val=&quot;quoin-num-1-0&quot;', $doc);
         self::assertSame(1, substr_count($doc, '<w:numPr>'));
     }
 
@@ -317,14 +317,14 @@ final class DocxPatcherTest extends TestCase
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('php-docx output changed: list paragraph refers to unregistered numId 9');
-        DocxPatcher::patch(self::marked('papercut-num-9-0'), self::numSpec(self::numbering()));
+        DocxPatcher::patch(self::marked('quoin-num-9-0'), self::numSpec(self::numbering()));
     }
 
     public function test_num_id_zero_fails_loudly(): void
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('php-docx output changed: list paragraph refers to unregistered numId 0');
-        DocxPatcher::patch(self::marked('papercut-num-0-0'), self::numSpec(self::numbering()));
+        DocxPatcher::patch(self::marked('quoin-num-0-0'), self::numSpec(self::numbering()));
     }
 
     public function test_heading_marker_restores_heading_style(): void
@@ -339,14 +339,14 @@ final class DocxPatcherTest extends TestCase
         $raw = self::raw(new Section([new Paragraph([new Run('b')])], header: [new Paragraph([new Run('h')], new ParagraphStyle(), null, Numbering::marker(1, 2, null))]));
         $out = DocxPatcher::patch($raw, self::numSpec(self::numbering()));
         self::assertStringContainsString('<w:pPr><w:numPr><w:ilvl w:val="2"/><w:numId w:val="1"/></w:numPr>', self::part($out, 'word/header1.xml'));
-        self::assertStringNotContainsString('papercut-num-', self::part($out, 'word/header1.xml'));
+        self::assertStringNotContainsString('quoin-num-', self::part($out, 'word/header1.xml'));
     }
 
     public function test_leftover_marker_fails_loudly(): void
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('php-docx output changed: list paragraph style in word/document.xml not found');
-        DocxPatcher::patch(self::marked('papercut-num-odd'), self::numSpec(self::numbering()));
+        DocxPatcher::patch(self::marked('quoin-num-odd'), self::numSpec(self::numbering()));
     }
 
     public function test_existing_numbering_part_fails_loudly(): void

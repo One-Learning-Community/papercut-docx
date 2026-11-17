@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
 use Dskripchenko\PhpDocx\{Document as DocxDocument, Section};
 use Dskripchenko\PhpDocx\Element\{Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\StyleRegistry;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
-use Papercut\Docx\Package\{DocxPatcher, PatchSpec};
-use Papercut\Docx\Tests\Support\DocxInspector;
+use Quoin\Docx\Package\{DocxPatcher, PatchSpec};
+use Quoin\Docx\Tests\Support\DocxInspector;
 use PHPUnit\Framework\TestCase;
 
 final class DocxPatcherMathTest extends TestCase
@@ -34,7 +34,7 @@ final class DocxPatcherMathTest extends TestCase
         $d = DocxInspector::of(DocxPatcher::patch(self::bytes('a', DocxPatcher::MATH . '2', 'b'), $spec));
         $xml = $d->part('word/document.xml');
         self::assertStringContainsString(self::OMML . '</w:p>', $xml);
-        self::assertStringNotContainsString('papercut-math', $xml);
+        self::assertStringNotContainsString('quoin-math', $xml);
         self::assertStringContainsString('xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"', $xml);
         self::assertSame(1, substr_count($xml, 'xmlns:m='));
     }
@@ -55,7 +55,7 @@ final class DocxPatcherMathTest extends TestCase
     public function test_text_that_looks_like_a_marker_is_left_alone_without_equations(): void
     {
         $d = DocxInspector::of(DocxPatcher::patch(self::bytes(DocxPatcher::MATH . '3'), self::spec()));
-        self::assertStringContainsString('papercut-math-3', $d->part('word/document.xml'));
+        self::assertStringContainsString('quoin-math-3', $d->part('word/document.xml'));
     }
 
     public function test_block_marker_with_a_sibling_run_throws(): void

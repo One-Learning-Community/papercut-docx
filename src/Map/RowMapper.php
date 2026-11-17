@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Table, TableCell, TableRow};
 use Dskripchenko\PhpDocx\Style\{CellStyle, RowHeightRule, TableStyle, VerticalAlign};
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\Fidelity;
-use Papercut\Style\{Align, ComputedStyle, TextAlign};
-use Papercut\Value\Length;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\Fidelity;
+use Quoin\Style\{Align, ComputedStyle, TextAlign};
+use Quoin\Value\Length;
 
 /**
  * A flex row as a borderless fixed-layout table: one grid column per item and per stretch of empty space
@@ -18,7 +18,7 @@ use Papercut\Value\Length;
  * @phpstan-type Item array{blocks: list<BlockElement>, style: ?ComputedStyle, index: int, boxed: bool, picture?: bool, path?: string}
  * @phpstan-type Segment array{x0: float, x1: float, item: ?Item, pad: array{float, float}, free: float}
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class RowMapper
 {

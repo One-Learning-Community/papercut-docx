@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\Docx\Map\PngTimestamps;
+use Quoin\Docx\Map\PngTimestamps;
 use PHPUnit\Framework\TestCase;
 
 final class PngTimestampsTest extends TestCase

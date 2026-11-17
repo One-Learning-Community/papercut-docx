@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, PageBreak, Paragraph, Run, Table, TableCell, TableRow};
 use Dskripchenko\PhpDocx\Style\{ParagraphStyle, RunStyle};
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Docx\Walk\Frame;
-use Papercut\Style\ComputedStyle;
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Style\ComputedStyle;
 
 /**
  * A column's children as a run of blocks: gap and vertical margins as paragraph spacing, pagination as flags.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class Flow
 {

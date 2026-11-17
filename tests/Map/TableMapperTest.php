@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, Page, Table, TableCell, TableRow, Text};
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Export\ExportOptions;
-use Papercut\Layout\WidthResolver;
-use Papercut\Style\{Align, Justify, Style};
-use Papercut\Value\{Auto, Fr};
+use Quoin\{Column, Page, Table, TableCell, TableRow, Text};
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Export\ExportOptions;
+use Quoin\Layout\WidthResolver;
+use Quoin\Style\{Align, Justify, Style};
+use Quoin\Value\{Auto, Fr};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{percent, pt};
+use function Quoin\{percent, pt};
 
 final class TableMapperTest extends TestCase
 {

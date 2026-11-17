@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Document, Image, Page, Text};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\{Document, Image, Page, Text};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class PageVariantsTest extends TestCase
 {

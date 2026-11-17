@@ -1,13 +1,13 @@
 {
-    "name": "papercut/docx",
-    "description": "Word (.docx) export for Papercut documents.",
+    "name": "quoin/docx",
+    "description": "Word (.docx) export for quoin/core documents.",
     "type": "library",
     "license": "MIT",
-    "homepage": "https://github.com/One-Learning-Community/papercut",
+    "homepage": "https://github.com/One-Learning-Community/quoin",
     "support": {
-        "issues": "https://github.com/One-Learning-Community/papercut/issues",
-        "source": "https://github.com/One-Learning-Community/papercut",
-        "docs": "https://one-learning-community.github.io/papercut/guide/word-export.html"
+        "issues": "https://github.com/One-Learning-Community/quoin/issues",
+        "source": "https://github.com/One-Learning-Community/quoin",
+        "docs": "https://one-learning-community.github.io/quoin/guide/word-export.html"
     },
     "authors": [
         {
@@ -20,7 +20,7 @@
         "word",
         "export",
         "document",
-        "papercut"
+        "quoin"
     ],
     "repositories": [
         {
@@ -29,7 +29,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "papercut/core": "0.15.x-dev"
+                    "quoin/core": "0.16.x-dev"
                 }
             }
         },
@@ -39,7 +39,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "papercut/math": "0.15.x-dev"
+                    "quoin/math": "0.16.x-dev"
                 }
             }
         }
@@ -48,8 +48,8 @@
         "php": "^8.4",
         "ext-zip": "*",
         "dskripchenko/php-docx": "^1.18",
-        "papercut/core": "^0.15",
-        "papercut/math": "^0.15"
+        "quoin/core": "^0.16",
+        "quoin/math": "^0.16"
     },
     "require-dev": {
         "bacon/bacon-qr-code": "^3.1",
@@ -64,12 +64,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Papercut\\Docx\\": "src/"
+            "Quoin\\Docx\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Papercut\\Docx\\Tests\\": "tests/"
+            "Quoin\\Docx\\Tests\\": "tests/"
         }
     },
     "scripts": {

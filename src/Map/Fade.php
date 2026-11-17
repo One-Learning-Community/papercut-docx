@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
-use Papercut\Style\ComputedStyle;
-use Papercut\Value\Color;
+use Quoin\Style\ComputedStyle;
+use Quoin\Value\Color;
 
 /**
  * Opacity, which the PDF applies to each thing a faded node draws: Word has none, so each color is blended
  * onto what lies beneath it (the nearest fill, else white) and written opaque.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class Fade
 {

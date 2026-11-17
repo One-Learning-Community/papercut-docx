@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, Span, Text};
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Exception\InvalidValue;
+use Quoin\{Column, Document, Image, Link, Page, PdfPage, Place, Span, Text};
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Exception\InvalidValue;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class RegionsTest extends TestCase
 {

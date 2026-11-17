@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, ListItem, ListNode, Table, TableCell, Text};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Style\ListMarker;
+use Quoin\{Column, ListItem, ListNode, Table, TableCell, Text};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Style\ListMarker;
 use PHPUnit\Framework\TestCase;
 
 final class ListMapperTest extends TestCase

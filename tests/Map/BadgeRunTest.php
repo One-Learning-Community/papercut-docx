@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\Decorator\Badge;
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Style\Align;
-use Papercut\{Image, Row, Span, Table, Text, View};
+use Quoin\Decorator\Badge;
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Style\Align;
+use Quoin\{Image, Row, Span, Table, Text, View};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class BadgeRunTest extends TestCase
 {
@@ -77,7 +77,7 @@ final class BadgeRunTest extends TestCase
 
     public function test_inline_row_non_badge_pills_use_the_badge_run_too(): void
     {
-        $pill = Text::make('Pill')->background(\Papercut\Value\Color::hex('#ffeecc'))->padding(\Papercut\Value\Edges::of(pt(1), pt(5)));
+        $pill = Text::make('Pill')->background(\Quoin\Value\Color::hex('#ffeecc'))->padding(\Quoin\Value\Edges::of(pt(1), pt(5)));
         $d = self::export(Row::make($pill, 'tail'));
         self::assertSame(0, $d->count('//w:tbl'));
         self::assertSame(1, $d->count('//w:r[w:t="' . self::NBSP . self::NBSP . 'Pill' . self::NBSP . self::NBSP . '"][w:rPr/w:shd[@w:fill="ffeecc"]][w:rPr/w:bdr[@w:color="ffeecc"]]'));
@@ -109,15 +109,15 @@ final class BadgeRunTest extends TestCase
 
     public function test_a_plain_highlight_in_a_row_is_not_padded_or_bordered(): void
     {
-        $d = self::export(Row::make(Text::make('Marked')->background(\Papercut\Value\Color::hex('#ffeecc')), 'tail'));
+        $d = self::export(Row::make(Text::make('Marked')->background(\Quoin\Value\Color::hex('#ffeecc')), 'tail'));
         self::assertSame(1, $d->count('//w:r[w:t="Marked"][w:rPr/w:shd[@w:fill="ffeecc"]]'));
         self::assertSame(0, $d->count('//w:bdr'));
     }
 
     public function test_a_mark_inside_a_pill_keeps_its_own_shading(): void
     {
-        $pill = Text::make('Pill ')->append(Span::text('hot', \Papercut\Style\Style::make(background: \Papercut\Value\Color::hex('#ff0000'))))
-            ->background(\Papercut\Value\Color::hex('#ffeecc'))->padding(\Papercut\Value\Edges::of(pt(1), pt(5)));
+        $pill = Text::make('Pill ')->append(Span::text('hot', \Quoin\Style\Style::make(background: \Quoin\Value\Color::hex('#ff0000'))))
+            ->background(\Quoin\Value\Color::hex('#ffeecc'))->padding(\Quoin\Value\Edges::of(pt(1), pt(5)));
         $d = self::export(Row::make($pill, 'tail'));
         self::assertSame(1, $d->count('//w:r[contains(w:t, "hot")][w:rPr/w:shd[@w:fill="ff0000"]]'));
         self::assertSame(1, $d->count('//w:r[contains(w:t, "Pill")][w:rPr/w:shd[@w:fill="ffeecc"]]'));

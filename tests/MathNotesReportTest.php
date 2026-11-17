@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Equation, Page};
-use Papercut\Docx\{DocxExporter, DocxOptions};
-use Papercut\Math\Math;
+use Quoin\{Document, Equation, Page};
+use Quoin\Docx\{DocxExporter, DocxOptions};
+use Quoin\Math\Math;
 use PHPUnit\Framework\TestCase;
 
 final class MathNotesReportTest extends TestCase

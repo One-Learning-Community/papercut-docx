@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx;
+namespace Quoin\Docx;
 
 use Dskripchenko\PhpDocx\Document as DocxDocument;
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{CoreProperties, ParagraphStyle, RunStyle, SectionStart, StyleRegistry};
-use Papercut\Page;
+use Quoin\Page;
 use Dskripchenko\PhpDocx\Section;
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
-use Papercut\Backend\DefaultBackend;
-use Papercut\Document;
-use Papercut\Exception\InvalidStructure;
-use Papercut\Docx\Map\{BoxMapper, ColumnsMark, EquationMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, Units, WordFonts};
-use Papercut\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
-use Papercut\Docx\Walk\DocxVisitor;
-use Papercut\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
-use Papercut\Layout\{LayoutContext, LayoutEngine, Paginator, PlacedPage};
-use Papercut\OverflowMode;
-use Papercut\Paint\Painter;
-use Papercut\Text\FontRegistry;
-use Papercut\Toc\TocIndex;
-use Papercut\Layout\WidthResolver;
-use Papercut\Style\PageThemes;
-use Papercut\Tree\TreeWalker;
+use Quoin\Backend\DefaultBackend;
+use Quoin\Document;
+use Quoin\Exception\InvalidStructure;
+use Quoin\Docx\Map\{BoxMapper, ColumnsMark, EquationMapper, Flow, ImageMapper, LineMetrics, InlineRow, ListMapper, Raster, RowMapper, TableMapper, TextMapper, TocMapper, Units, WordFonts};
+use Quoin\Docx\Package\{DocxPatcher, Numbering, PageSetupMapper, PatchSpec};
+use Quoin\Docx\Walk\DocxVisitor;
+use Quoin\Export\{ExportOptions, Exporter, Fidelity, FidelityReport, NoteReporter, Output, PdfOptions};
+use Quoin\Layout\{LayoutContext, LayoutEngine, Paginator, PlacedPage};
+use Quoin\OverflowMode;
+use Quoin\Paint\Painter;
+use Quoin\Text\FontRegistry;
+use Quoin\Toc\TocIndex;
+use Quoin\Layout\WidthResolver;
+use Quoin\Style\PageThemes;
+use Quoin\Tree\TreeWalker;
 
 /**
  * Word (.docx) export: the document's pages as flowing Word sections that Word paginates, a new section wherever
@@ -121,7 +121,7 @@ final class DocxExporter implements Exporter
             modified: $date,
         ));
 
-        // Heading styles carry no formatting of their own: every paragraph has Papercut's values directly.
+        // Heading styles carry no formatting of their own: every paragraph has its values directly.
         $registry = new StyleRegistry();
         for ($level = 1; $level <= 6; $level++) {
             $registry->heading($level, new RunStyle(), new ParagraphStyle());

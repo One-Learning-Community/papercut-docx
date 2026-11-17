@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Table, TableCell as DocxCell, TableRow};
 use Dskripchenko\PhpDocx\Element\Paragraph;
 use Dskripchenko\PhpDocx\Style\{Alignment, CellStyle, RowHeightRule, TableStyle, VerticalAlign};
-use Papercut\Layout\GridCell;
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\Fidelity;
-use Papercut\Style\{ComputedStyle, Justify};
-use Papercut\TableCell;
-use Papercut\Value\{Auto, Fr, Length, Percent};
+use Quoin\Layout\GridCell;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\Fidelity;
+use Quoin\Style\{ComputedStyle, Justify};
+use Quoin\TableCell;
+use Quoin\Value\{Auto, Fr, Length, Percent};
 
 /**
- * Papercut tables as Word tables at WidthResolver's column widths.
+ * Tables as Word tables at WidthResolver's column widths.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class TableMapper
 {

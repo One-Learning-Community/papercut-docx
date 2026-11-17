@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 /**
  * Takes the time of drawing out of a PNG. Imagick writes it into every PNG it encodes (a tIME chunk, and
  * date:create, date:modify and date:timestamp text), so the same picture made twice would differ, and with
  * it the Word file.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class PngTimestamps
 {

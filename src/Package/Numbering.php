@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Package;
+namespace Quoin\Docx\Package;
 
-use Papercut\Style\ListMarker;
+use Quoin\Style\ListMarker;
 
 /**
  * The numbering of one export: a `w:num` per list, an abstract numbering per marker used. Rendered as word/numbering.xml.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class Numbering
 {
-    public const string STYLE_PREFIX = 'papercut-num-';
+    public const string STYLE_PREFIX = 'quoin-num-';
 
     private const int LEVELS = 9;
 

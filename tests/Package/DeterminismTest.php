@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\Document;
-use Papercut\Docx\DocxExporter;
+use Quoin\Document;
+use Quoin\Docx\DocxExporter;
 use PHPUnit\Framework\TestCase;
 
 final class DeterminismTest extends TestCase

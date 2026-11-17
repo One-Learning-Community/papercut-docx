@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\Decorator\CodeBlock;
-use Papercut\Docx\Tests\Support\Styles;
+use Quoin\Decorator\CodeBlock;
+use Quoin\Docx\Tests\Support\Styles;
 use PHPUnit\Framework\TestCase;
 
 final class CodeBlockDocxTest extends TestCase
@@ -55,12 +55,12 @@ final class CodeBlockDocxTest extends TestCase
         $d = self::export(self::block());
         self::assertSame(['8'], array_unique($d->values(self::P . '/w:pPr/w:pBdr/w:left/@w:space')));
         self::assertSame(['6'], array_unique($d->values(self::P . '/w:pPr/w:pBdr/w:top/@w:space')));
-        self::assertSame([], $d->values('//w:pBdr/*[contains(@w:color, "papercut")]'));
+        self::assertSame([], $d->values('//w:pBdr/*[contains(@w:color, "quoin")]'));
     }
 
     public function test_adjacent_blocks_are_separated_so_word_draws_two_boxes(): void
     {
-        $d = self::export(\Papercut\Column::make(self::block(), self::block()));
+        $d = self::export(\Quoin\Column::make(self::block(), self::block()));
         // the first paragraph of the second block follows a paragraph without borders, which follows a bordered one
         $second = $d->values('/w:document/w:body/w:p[w:pPr/w:pBdr][preceding-sibling::*[1][self::w:p and not(w:pPr/w:pBdr)]][preceding-sibling::*[2][self::w:p/w:pPr/w:pBdr]]/w:pPr/w:pBdr/w:top/@w:val');
         self::assertCount(1, $second);
@@ -103,13 +103,13 @@ final class CodeBlockDocxTest extends TestCase
 
     public function test_text_containing_the_patch_markers_exports(): void
     {
-        $d = self::export(\Papercut\Text::make('See papercut-spec and papercut-shd-abcdef and papercut-sp8-aabbcc for details'));
-        self::assertStringContainsString('papercut-spec', implode('', $d->values('//w:t')));
+        $d = self::export(\Quoin\Text::make('See quoin-spec and quoin-shd-abcdef and quoin-sp8-aabbcc for details'));
+        self::assertStringContainsString('quoin-spec', implode('', $d->values('//w:t')));
     }
 
     public function test_a_code_block_first_in_a_list_item_gets_its_own_marker_paragraph(): void
     {
-        $d = self::export(\Papercut\ListNode::ordered(\Papercut\ListItem::make(self::block())));
+        $d = self::export(\Quoin\ListNode::ordered(\Quoin\ListItem::make(self::block())));
         // The marker paragraph is the only numbered one and has no border or shading.
         self::assertCount(1, $d->values(self::P . '/w:pPr/w:numPr'));
         self::assertNotSame([], $d->values(self::P . '[w:pPr/w:numPr][not(w:pPr/w:pBdr)][not(w:pPr/w:shd)]'));

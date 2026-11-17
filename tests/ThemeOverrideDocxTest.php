@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Column, Document, Page, Text, Toc};
-use Papercut\Decorator\ChoiceList;
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Style\{Style, ThemeOverride};
-use Papercut\Value\{Color, Length};
+use Quoin\{Column, Document, Page, Text, Toc};
+use Quoin\Decorator\ChoiceList;
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Style\{Style, ThemeOverride};
+use Quoin\Value\{Color, Length};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class ThemeOverrideDocxTest extends TestCase
 {

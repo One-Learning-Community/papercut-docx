@@ -11,21 +11,21 @@ declare(strict_types=1);
  * toc_off_* is the same export with DocxOptions(tocPageNumbers: false), and transcript_* the 10-page table (no layout).
  *
  * Run from packages/docx with Xdebug off and OPcache on:
- *   php -d xdebug.mode=off -d opcache.enable_cli=1 bench/run.php | PAPERCUT_BASELINE=bench/baseline.json php ../core/bench/check.php
+ *   php -d xdebug.mode=off -d opcache.enable_cli=1 bench/run.php | QUOIN_BASELINE=bench/baseline.json php ../core/bench/check.php
  */
 
-use Papercut\Docx\{DocxExporter, DocxOptions};
+use Quoin\Docx\{DocxExporter, DocxOptions};
 
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../../core/bench/lib.php';
 
 $runs = max(1, (int) ($argv[1] ?? 5));
-$article = static fn (): Papercut\Document => require __DIR__ . '/../../core/bench/article.php';
-$transcript = static fn (): Papercut\Document => require __DIR__ . '/../../core/bench/transcript.php';
+$article = static fn (): Quoin\Document => require __DIR__ . '/../../core/bench/article.php';
+$transcript = static fn (): Quoin\Document => require __DIR__ . '/../../core/bench/transcript.php';
 
-$toc = papercut_bench(static fn (): string => $article()->export(new DocxExporter())->bytes(), $runs);
-$off = papercut_bench(static fn (): string => $article()->export(new DocxExporter(), new DocxOptions(tocPageNumbers: false))->bytes(), $runs);
-$table = papercut_bench(static fn (): string => $transcript()->export(new DocxExporter())->bytes(), $runs);
+$toc = quoin_bench(static fn (): string => $article()->export(new DocxExporter())->bytes(), $runs);
+$off = quoin_bench(static fn (): string => $article()->export(new DocxExporter(), new DocxOptions(tocPageNumbers: false))->bytes(), $runs);
+$table = quoin_bench(static fn (): string => $transcript()->export(new DocxExporter())->bytes(), $runs);
 
 echo json_encode([
     'median_ms' => $toc['median_ms'],

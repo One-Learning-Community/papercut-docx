@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Walk;
+namespace Quoin\Docx\Walk;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Image as DocxImage, PageBreak as DocxPageBreak, Paragraph};
 use Dskripchenko\PhpDocx\Style\{Alignment, HorizontalAnchor, ImagePosition, ParagraphStyle, VerticalAnchor};
-use Papercut\{ColumnBreak, Equation, Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
-use Papercut\Docx\Map\{BadgeRun, BoxMapper, ColumnsMark, EquationMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Export\Fidelity;
-use Papercut\Layout\ColumnFlowLayouter;
-use Papercut\Layout\{TableGrid, WidthResolver};
-use Papercut\Style\{PageThemes, Align, ComputedStyle, Direction, Justify, StyleName, TextAlign};
-use Papercut\Tree\{ColumnFlowPlacement, ColumnFlows, Region, TreeVisitor, Visit};
-use Papercut\Value\{Auto, ColumnSpec, Edges, Length, Percent};
+use Quoin\{ColumnBreak, Equation, Image, Link, ListItem, ListNode, Node, Page, PageBreak, PageNumber, PdfPage, Place, QrCode, Spacer, Svg, Table, TableCell, TableRow, Text, Toc, View};
+use Quoin\Docx\Map\{BadgeRun, BoxMapper, ColumnsMark, EquationMapper, Fade, Flow, ImageMapper, InlineRow, ListMapper, RowMapper, TableMapper, TextMapper, TocMapper, Units};
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Export\Fidelity;
+use Quoin\Layout\ColumnFlowLayouter;
+use Quoin\Layout\{TableGrid, WidthResolver};
+use Quoin\Style\{PageThemes, Align, ComputedStyle, Direction, Justify, StyleName, TextAlign};
+use Quoin\Tree\{ColumnFlowPlacement, ColumnFlows, Region, TreeVisitor, Visit};
+use Quoin\Value\{Auto, ColumnSpec, Edges, Length, Percent};
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /**
  * Turns a tree walk into php-docx blocks (approach B2 of the multi-format spec): columns flow as paragraphs,
  * rows become borderless fixed-layout tables sized by WidthResolver, and a decorated box becomes a single-cell table.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class DocxVisitor implements TreeVisitor
 {

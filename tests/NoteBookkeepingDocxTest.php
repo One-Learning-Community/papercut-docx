@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Page, PageBreak, Row, Span, Text};
-use Papercut\Docx\{DocxExporter, DocxOptions};
+use Quoin\{Document, Page, PageBreak, Row, Span, Text};
+use Quoin\Docx\{DocxExporter, DocxOptions};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /** Each fidelity note appears once, at the node it belongs to. */
 final class NoteBookkeepingDocxTest extends TestCase

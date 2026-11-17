@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Equation, Page};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Math\Math;
+use Quoin\{Document, Equation, Page};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Math\Math;
 use PHPUnit\Framework\TestCase;
 
 final class MatrixEquationDocxTest extends TestCase

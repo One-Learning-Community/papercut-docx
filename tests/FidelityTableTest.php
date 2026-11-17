@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Column, Document, Image, Link, Page, PdfPage, Place, Row, Span, Spacer, Text, View};
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Exception\UnsupportedFeature;
-use Papercut\Export\FidelityLevel;
-use Papercut\Style\Style;
+use Quoin\{Column, Document, Image, Link, Page, PdfPage, Place, Row, Span, Spacer, Text, View};
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Exception\UnsupportedFeature;
+use Quoin\Export\FidelityLevel;
+use Quoin\Style\Style;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 /** One row per approximated (≈) or dropped (✗) DOCX row of the spec's capability table, plus this package's own. */
 final class FidelityTableTest extends TestCase

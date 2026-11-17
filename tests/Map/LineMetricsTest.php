@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\Docx\Map\LineMetrics;
-use Papercut\Text\{FontFace, FontSet};
+use Quoin\Docx\Map\LineMetrics;
+use Quoin\Text\{FontFace, FontSet};
 use PHPUnit\Framework\TestCase;
 
 final class LineMetricsTest extends TestCase

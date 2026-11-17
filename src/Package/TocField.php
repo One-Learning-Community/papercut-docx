@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Package;
+namespace Quoin\Docx\Package;
 
 /**
  * One table of contents for DocxPatcher: the field's levels and the entry paragraphs it writes in place of the marker.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final readonly class TocField
 {
     /** The text of the marker paragraph DocxPatcher replaces, followed by the table of contents' number. */
-    public const string MARKER = 'papercut-toc-marker-';
+    public const string MARKER = 'quoin-toc-marker-';
 
     /** @param list<TocFieldEntry> $entries */
     public function __construct(

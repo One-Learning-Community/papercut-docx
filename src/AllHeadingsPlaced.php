@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx;
+namespace Quoin\Docx;
 
 /**
  * Ends the page layout behind a table of contents' page numbers early: every heading it lists has its page.

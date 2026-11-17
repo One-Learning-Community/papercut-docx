@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\Decorator\Badge;
-use Papercut\Docx\Tests\Support\Styles;
-use Papercut\Style\{Justify, Style};
-use Papercut\{Image, Link, ListItem, ListNode, Row, Span, Text, View};
+use Quoin\Decorator\Badge;
+use Quoin\Docx\Tests\Support\Styles;
+use Quoin\Style\{Justify, Style};
+use Quoin\{Image, Link, ListItem, ListNode, Row, Span, Text, View};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class InlineRowTest extends TestCase
 {
@@ -51,14 +51,14 @@ final class InlineRowTest extends TestCase
 
     public function test_a_badge_with_fill_and_border_keeps_both(): void
     {
-        $d = self::export(Row::make(Badge::make('Both')->tone('warning')->borderWidth(\Papercut\Value\Edges::all(pt(1)))));
+        $d = self::export(Row::make(Badge::make('Both')->tone('warning')->borderWidth(\Quoin\Value\Edges::all(pt(1)))));
         self::assertSame(0, $d->count('//w:tbl'));
         self::assertSame(1, $d->count('//w:r[contains(w:t, "Both")][w:rPr/w:bdr[@w:color="fcd34d"]][w:rPr/w:shd[@w:fill="fef3c7"]]'));
     }
 
     public function test_a_badge_with_uneven_borders_keeps_its_table(): void
     {
-        $d = self::export(Row::make(Badge::make('Odd')->borderWidth(\Papercut\Value\Edges::of(pt(1), pt(0)))));
+        $d = self::export(Row::make(Badge::make('Odd')->borderWidth(\Quoin\Value\Edges::of(pt(1), pt(0)))));
         self::assertSame(1, $d->count('//w:tbl'));
     }
 
@@ -106,7 +106,7 @@ final class InlineRowTest extends TestCase
         self::assertSame(1, $d->count('//w:hyperlink[w:r/w:t="docs"]'));
     }
 
-    /** @return iterable<string, array{\Papercut\View}> */
+    /** @return iterable<string, array{\Quoin\View}> */
     public static function rowsThatStayTables(): iterable
     {
         yield 'a growing item' => [Row::make(Text::make('a')->grow(1), 'b')];
@@ -116,9 +116,9 @@ final class InlineRowTest extends TestCase
         yield 'a basis' => [Row::make(Text::make('Label')->basis(pt(150)), 'value')];
         yield 'a min width' => [Row::make(Text::make('Label')->minWidth(pt(150)), 'value')];
         yield 'a max width' => [Row::make(Text::make('Label')->maxWidth(pt(50)), 'value')];
-        yield 'an item bordered on one side' => [Row::make(View::make('a')->apply(Style::make(borderWidth: \Papercut\Value\Edges::of(pt(0), pt(0), pt(1), pt(0)))), 'b')];
+        yield 'an item bordered on one side' => [Row::make(View::make('a')->apply(Style::make(borderWidth: \Quoin\Value\Edges::of(pt(0), pt(0), pt(1), pt(0)))), 'b')];
         yield 'a two paragraph item' => [Row::make(View::make('a', 'b'), 'c')];
-        yield 'a decorated row' => [Row::make('a', 'b')->apply(Style::make(padding: \Papercut\Value\Edges::of(pt(6))))];
+        yield 'a decorated row' => [Row::make('a', 'b')->apply(Style::make(padding: \Quoin\Value\Edges::of(pt(6))))];
         yield 'a wrapped row' => [Row::make(...array_map(static fn (int $i): string => str_repeat('word', 20) . $i, range(1, 4)))->wrap()];
     }
 

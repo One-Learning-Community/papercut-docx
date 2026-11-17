@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Walk;
+namespace Quoin\Docx\Walk;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, TableCell, TableRow};
-use Papercut\Layout\{FlexSlot, TableGrid};
-use Papercut\Node;
-use Papercut\Style\ComputedStyle;
-use Papercut\Value\Color;
+use Quoin\Layout\{FlexSlot, TableGrid};
+use Quoin\Node;
+use Quoin\Style\ComputedStyle;
+use Quoin\Value\Color;
 
 /**
  * One open node during the walk, collecting what its children produced.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class Frame
 {

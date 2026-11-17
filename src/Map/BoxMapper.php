@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Paragraph, Run, Table, TableCell, TableRow};
 use Dskripchenko\PhpDocx\Style\{Alignment, Border, BorderSet, BorderStyle as DocxBorderStyle, CellStyle, ParagraphStyle, RowHeightRule, RunStyle, TableStyle, VerticalAlign};
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\Fidelity;
-use Papercut\Style\{BorderStyle, ComputedStyle, Justify};
-use Papercut\Value\{Auto, Edges, Length};
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\Fidelity;
+use Quoin\Style\{BorderStyle, ComputedStyle, Justify};
+use Quoin\Value\{Auto, Edges, Length};
 
 /**
  * Boxes with padding, a border or a background, as single-cell tables.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class BoxMapper
 {

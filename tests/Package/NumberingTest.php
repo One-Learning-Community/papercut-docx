@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\Docx\Package\Numbering;
-use Papercut\Style\ListMarker;
+use Quoin\Docx\Package\Numbering;
+use Quoin\Style\ListMarker;
 use PHPUnit\Framework\TestCase;
 
 final class NumberingTest extends TestCase
@@ -73,8 +73,8 @@ final class NumberingTest extends TestCase
 
     public function test_marker_style_ids(): void
     {
-        self::assertSame('papercut-num-3-1', Numbering::marker(3, 1, null));
-        self::assertSame('papercut-num-3-0-h2', Numbering::marker(3, 0, 2));
+        self::assertSame('quoin-num-3-1', Numbering::marker(3, 1, null));
+        self::assertSame('quoin-num-3-0-h2', Numbering::marker(3, 0, 2));
     }
 
     public function test_an_instance_of_no_marker_throws(): void

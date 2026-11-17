@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
 use Dskripchenko\PhpDocx\Element\ImageFormat;
-use Papercut\Docx\Map\Raster;
-use Papercut\Docx\Tests\Support\RsvgConvert;
-use Papercut\Exception\InvalidValue;
-use Papercut\QrCode;
-use Papercut\Value\Color;
-use Papercut\Vector\SvgDocument;
+use Quoin\Docx\Map\Raster;
+use Quoin\Docx\Tests\Support\RsvgConvert;
+use Quoin\Exception\InvalidValue;
+use Quoin\QrCode;
+use Quoin\Value\Color;
+use Quoin\Vector\SvgDocument;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 

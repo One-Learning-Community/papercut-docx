@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
 use Dskripchenko\PhpDocx\Element\{Field, Hyperlink, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\Alignment;
-use Papercut\{Document, Page, PageNumber, Span, Text, View};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Map\{LineMetrics, TextMapper, WordFonts};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Export\Fidelity;
-use Papercut\Exception\InvalidValue;
-use Papercut\Style\Style;
-use Papercut\Text\FontSet;
-use Papercut\Value\{Color, Length};
+use Quoin\{Document, Page, PageNumber, Span, Text, View};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Map\{LineMetrics, TextMapper, WordFonts};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Export\Fidelity;
+use Quoin\Exception\InvalidValue;
+use Quoin\Style\Style;
+use Quoin\Text\FontSet;
+use Quoin\Value\{Color, Length};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class TextMapperTest extends TestCase
 {
@@ -258,7 +258,7 @@ final class TextMapperTest extends TestCase
 
     public function test_pre_wrap_spans_keep_their_spaces(): void
     {
-        $p = $this->para(Text::spans(new Span('x  '), new Span('  a  b', Style::make(whiteSpace: \Papercut\Style\WhiteSpace::PreWrap)), new Span('  y')));
+        $p = $this->para(Text::spans(new Span('x  '), new Span('  a  b', Style::make(whiteSpace: \Quoin\Style\WhiteSpace::PreWrap)), new Span('  y')));
         self::assertSame(['x ', '  a  b', ' y'], self::runTexts($p));
     }
 

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
-use Papercut\{Document, Page, Text};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Package\{DocxPatcher, PatchSpec};
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Export\ExportOptions;
-use Papercut\Text\{FontClass, FontInfo, FontSet};
+use Quoin\{Document, Page, Text};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Package\{DocxPatcher, PatchSpec};
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Export\ExportOptions;
+use Quoin\Text\{FontClass, FontInfo, FontSet};
 use PHPUnit\Framework\TestCase;
 
 final class FontTableTest extends TestCase

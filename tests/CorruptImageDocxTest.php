@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Page};
-use Papercut\Docx\{DocxExporter, DocxOptions};
-use Papercut\Markup\{Markup, MarkupOptions};
+use Quoin\{Document, Page};
+use Quoin\Docx\{DocxExporter, DocxOptions};
+use Quoin\Markup\{Markup, MarkupOptions};
 use PHPUnit\Framework\TestCase;
 
 /** A corrupt resolver image is a missing one in Word too: no exception, no PHP diagnostic. */

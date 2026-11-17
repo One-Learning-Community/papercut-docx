@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{ParagraphStyle, RunStyle};
-use Papercut\Docx\Package\DocxPatcher;
-use Papercut\Equation;
-use Papercut\Math\Render\{OmmlWriter, RunFormat};
-use Papercut\Style\{ComputedStyle, TextAlign};
+use Quoin\Docx\Package\DocxPatcher;
+use Quoin\Equation;
+use Quoin\Math\Render\{OmmlWriter, RunFormat};
+use Quoin\Style\{ComputedStyle, TextAlign};
 
 /**
  * A block equation as a native Word equation (OMML). The paragraph holds a marker run that DocxPatcher swaps for the
  * `m:oMathPara`; the OMML itself is kept by id for PatchSpec::withMath().
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class EquationMapper
 {
@@ -46,7 +46,7 @@ final class EquationMapper
     }
 
     /** An inline equation: a marker run that DocxPatcher swaps for an `m:oMath` between the paragraph's runs. */
-    public function run(\Papercut\Math\Node\Node $math, ComputedStyle $s, ?string $shadingHex = null): Run
+    public function run(\Quoin\Math\Node\Node $math, ComputedStyle $s, ?string $shadingHex = null): Run
     {
         $id = count($this->maths) + 1;
         $this->maths[$id] = OmmlWriter::oMath($math, new RunFormat(Units::hex($s->color), Units::halfPoints($s->fontSize), $shadingHex));

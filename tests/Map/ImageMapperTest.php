@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Image, QrCode, Svg};
-use Papercut\Backend\DefaultBackend;
-use Papercut\Barcode\QrShape;
-use Papercut\Docx\Map\{ImageMapper, Raster};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\Fidelity;
-use Papercut\Style\ImageFit;
+use Quoin\{Image, QrCode, Svg};
+use Quoin\Backend\DefaultBackend;
+use Quoin\Barcode\QrShape;
+use Quoin\Docx\Map\{ImageMapper, Raster};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\Fidelity;
+use Quoin\Style\ImageFit;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, pt};
+use function Quoin\{mm, pt};
 
 #[RequiresPhpExtension('gd')]
 final class ImageMapperTest extends TestCase
@@ -193,16 +193,16 @@ final class ImageMapperTest extends TestCase
 
     public function test_docx_options_send_svg_through_rsvg_convert(): void
     {
-        $doc = \Papercut\Document::make(\Papercut\Page::a4()->body(Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#0a0"/></svg>')));
+        $doc = \Quoin\Document::make(\Quoin\Page::a4()->body(Svg::fromString('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#0a0"/></svg>')));
         // A stand-in that answers as rsvg-convert but always draws blue: a green picture would be Imagick's.
-        $real = \Papercut\Docx\Tests\Support\RsvgConvert::require();
+        $real = \Quoin\Docx\Tests\Support\RsvgConvert::require();
         $script = tempnam(sys_get_temp_dir(), 'rsvg');
         self::assertNotFalse($script);
         file_put_contents($script, "#!/bin/sh\nif [ \"\$1\" = --version ]; then exec \"$real\" --version; fi\ncat > /dev/null\n"
             . "exec \"$real\" \"\$@\" <<EOF\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\" fill=\"#00f\"/></svg>\nEOF\n");
         chmod($script, 0755);
         try {
-            $d = DocxInspector::of($doc->export(new \Papercut\Docx\DocxExporter(), new \Papercut\Docx\DocxOptions(rsvgConvert: $script))->bytes());
+            $d = DocxInspector::of($doc->export(new \Quoin\Docx\DocxExporter(), new \Quoin\Docx\DocxOptions(rsvgConvert: $script))->bytes());
         } finally {
             unlink($script);
         }

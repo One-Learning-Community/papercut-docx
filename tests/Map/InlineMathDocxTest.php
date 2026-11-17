@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Column, Document, Equation, Page, Span, Table, Text};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Math\Math;
-use Papercut\Style\Style;
-use Papercut\Value\Color;
+use Quoin\{Column, Document, Equation, Page, Span, Table, Text};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Math\Math;
+use Quoin\Style\Style;
+use Quoin\Value\Color;
 use PHPUnit\Framework\TestCase;
 
 final class InlineMathDocxTest extends TestCase
 {
-    private static function export(\Papercut\Node ...$body): \DOMXPath
+    private static function export(\Quoin\Node ...$body): \DOMXPath
     {
         $d = DocxInspector::of(Document::make(Page::a4()->body(Column::make(...$body)))->export(new DocxExporter())->bytes());
         $xp = $d->xpath();
         $xp->registerNamespace('m', 'http://schemas.openxmlformats.org/officeDocument/2006/math');
-        self::assertStringNotContainsString('papercut-math', $d->part('word/document.xml'));
+        self::assertStringNotContainsString('quoin-math', $d->part('word/document.xml'));
 
         return $xp;
     }
@@ -67,7 +67,7 @@ final class InlineMathDocxTest extends TestCase
 
     public function test_inline_carries_size_and_color(): void
     {
-        $xp = self::export(Text::spans(Span::math('x'))->size(\Papercut\pt(20))->color('#b91c1c'));
+        $xp = self::export(Text::spans(Span::math('x'))->size(\Quoin\pt(20))->color('#b91c1c'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:color[@w:val="b91c1c"]'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:sz[@w:val="40"]'));
     }
@@ -80,8 +80,8 @@ final class InlineMathDocxTest extends TestCase
 
     public function test_own_size_and_color_win_over_the_paragraphs(): void
     {
-        $xp = self::export(Text::spans(new Span('', Style::make(color: Color::hex('#ff0000'), fontSize: \Papercut\pt(20)), math: Math::row('x')))
-            ->size(\Papercut\pt(10))->color('#0000ff'));
+        $xp = self::export(Text::spans(new Span('', Style::make(color: Color::hex('#ff0000'), fontSize: \Quoin\pt(20)), math: Math::row('x')))
+            ->size(\Quoin\pt(10))->color('#0000ff'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:color[@w:val="ff0000"]'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:sz[@w:val="40"]'));
     }

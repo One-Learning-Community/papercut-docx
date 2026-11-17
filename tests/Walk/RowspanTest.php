@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Table, TableCell};
+use Quoin\{Table, TableCell};
 
-use function Papercut\pt;
-use Papercut\Docx\Tests\Support\Styles;
+use function Quoin\pt;
+use Quoin\Docx\Tests\Support\Styles;
 use PHPUnit\Framework\TestCase;
 
 final class RowspanTest extends TestCase

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\{Document, Page};
-use Papercut\Docx\DocxExporter;
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Export\ExportOptions;
-use Papercut\Style\{Style, Theme};
-use Papercut\Value\Color;
-use Papercut\Markup\Markup;
+use Quoin\{Document, Page};
+use Quoin\Docx\DocxExporter;
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Export\ExportOptions;
+use Quoin\Style\{Style, Theme};
+use Quoin\Value\Color;
+use Quoin\Markup\Markup;
 use PHPUnit\Framework\TestCase;
 
 final class PreformattedTest extends TestCase
@@ -49,12 +49,12 @@ final class PreformattedTest extends TestCase
 
     public function test_span_code_and_text_code_give_the_same_runs_as_markup_code(): void
     {
-        $viaMarkup = self::export(\Papercut\Text::markup('<code>x</code>'));
-        self::assertSame(self::runXml($viaMarkup, 'x'), self::runXml(self::export(\Papercut\Text::code('x')), 'x'));
+        $viaMarkup = self::export(\Quoin\Text::markup('<code>x</code>'));
+        self::assertSame(self::runXml($viaMarkup, 'x'), self::runXml(self::export(\Quoin\Text::code('x')), 'x'));
         self::assertStringContainsString('Courier New', self::runXml($viaMarkup, 'x'));
 
-        $mixedMarkup = self::export(\Papercut\Text::markup('plain <code>x</code> end'));
-        $mixedApi = self::export(\Papercut\Text::make('plain ')->append(\Papercut\Span::code('x'), ' end'));
+        $mixedMarkup = self::export(\Quoin\Text::markup('plain <code>x</code> end'));
+        $mixedApi = self::export(\Quoin\Text::make('plain ')->append(\Quoin\Span::code('x'), ' end'));
         foreach (['plain ', 'x', ' end'] as $t) {
             self::assertSame(self::runXml($mixedMarkup, $t), self::runXml($mixedApi, $t));
         }
@@ -95,8 +95,8 @@ final class PreformattedTest extends TestCase
 
     public function test_a_pre_in_a_justified_container_is_not_justified(): void
     {
-        $node = \Papercut\View::make(Markup::html("<pre>a b\nc d</pre><p>plain text</p>"))
-            ->apply(Style::make(textAlign: \Papercut\Style\TextAlign::Justify));
+        $node = \Quoin\View::make(Markup::html("<pre>a b\nc d</pre><p>plain text</p>"))
+            ->apply(Style::make(textAlign: \Quoin\Style\TextAlign::Justify));
         $doc = self::export($node);
 
         self::assertSame(1, $doc->count('//w:p[w:r[w:t="plain text"]]/w:pPr/w:jc[@w:val="both"]'));

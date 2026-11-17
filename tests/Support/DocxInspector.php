@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Support;
+namespace Quoin\Docx\Tests\Support;
 
 /** Opens a .docx in memory and answers XPath questions about its parts. */
 final class DocxInspector

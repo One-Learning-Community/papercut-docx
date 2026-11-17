@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{Hyperlink, InlineElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{Alignment, ParagraphStyle};
-use Papercut\Docx\Walk\Frame;
-use Papercut\Export\Fidelity;
-use Papercut\Layout\WidthResolver;
-use Papercut\View;
-use Papercut\Style\{ComputedStyle, Justify};
-use Papercut\Value\Auto;
+use Quoin\Docx\Walk\Frame;
+use Quoin\Export\Fidelity;
+use Quoin\Layout\WidthResolver;
+use Quoin\View;
+use Quoin\Style\{ComputedStyle, Justify};
+use Quoin\Value\Auto;
 
 /**
  * A row of nothing but inline content (text, links, badges) as one paragraph, so a list bullet shares its line and
@@ -25,7 +25,7 @@ use Papercut\Value\Auto;
  * gaps must fit the row, so the PDF sets them on one line without squeezing any; otherwise the PDF wraps a long item
  * in its own column, and the row keeps its table. Anything else keeps its table.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class InlineRow
 {

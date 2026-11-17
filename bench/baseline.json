@@ -1,5 +1,5 @@
 {
-    "note": "Medians of bench/run.php (5 runs after 1 warm-up, Xdebug off, OPcache CLI on) per machine class (env PAPERCUT_BENCH_MACHINE), checked by core's bench/check.php. \"local\" is a developer laptop (Apple M5 Max); CI runs as \"ci-ubuntu-latest\".",
+    "note": "Medians of bench/run.php (5 runs after 1 warm-up, Xdebug off, OPcache CLI on) per machine class (env QUOIN_BENCH_MACHINE), checked by core's bench/check.php. \"local\" is a developer laptop (Apple M5 Max); CI runs as \"ci-ubuntu-latest\".",
     "machines": {
         "ci-ubuntu-latest": {
             "median_ms": 126.35,

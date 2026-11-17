@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Support;
+namespace Quoin\Docx\Tests\Support;
 
 /** The core visual fixtures and the example documents, which every format is checked against. */
 final class Documents
@@ -25,10 +25,10 @@ final class Documents
         }
     }
 
-    public static function load(string $file): \Papercut\Document
+    public static function load(string $file): \Quoin\Document
     {
         $doc = (static fn (string $f): mixed => require $f)($file);
-        \assert($doc instanceof \Papercut\Document);
+        \assert($doc instanceof \Quoin\Document);
 
         return $doc;
     }

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Walk;
+namespace Quoin\Docx\Tests\Walk;
 
-use Papercut\{Document, Image, Page, Place, QrCode, Text};
-use Papercut\Export\FidelityLevel;
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Style\{Align, Anchor};
+use Quoin\{Document, Image, Page, Place, QrCode, Text};
+use Quoin\Export\FidelityLevel;
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Style\{Align, Anchor};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\{mm, percent, pt};
+use function Quoin\{mm, percent, pt};
 
 final class LayersTest extends TestCase
 {

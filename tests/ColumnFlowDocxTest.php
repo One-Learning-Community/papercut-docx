@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{ColumnBreak, ColumnFlow, Column, Document, Page, Table, TableCell, Text, View};
-use Papercut\Docx\Tests\Support\{DocxInspector, Styles};
-use Papercut\Exception\InvalidStructure;
-use Papercut\Value\{ColumnSpec, Color, ColumnRule};
+use Quoin\{ColumnBreak, ColumnFlow, Column, Document, Page, Table, TableCell, Text, View};
+use Quoin\Docx\Tests\Support\{DocxInspector, Styles};
+use Quoin\Exception\InvalidStructure;
+use Quoin\Value\{ColumnSpec, Color, ColumnRule};
 use PHPUnit\Framework\TestCase;
 
-use function Papercut\pt;
+use function Quoin\pt;
 
 final class ColumnFlowDocxTest extends TestCase
 {
@@ -185,9 +185,9 @@ final class ColumnFlowDocxTest extends TestCase
 
     public function test_body_text_equal_to_the_column_break_marker_survives(): void
     {
-        $d = self::export(Page::a4()->body(ColumnFlow::make(Text::make('papercut-column-break'), ColumnBreak::make(), Text::make('see papercut-column-break'))->columns(2)));
+        $d = self::export(Page::a4()->body(ColumnFlow::make(Text::make('quoin-column-break'), ColumnBreak::make(), Text::make('see quoin-column-break'))->columns(2)));
         self::assertSame(1, $d->count("//w:br[@w:type='column']"));
-        self::assertSame(['papercut-column-break', 'see papercut-column-break'], $d->values('//w:t[normalize-space()]'));
+        self::assertSame(['quoin-column-break', 'see quoin-column-break'], $d->values('//w:t[normalize-space()]'));
     }
 
     public function test_a_table_in_a_flow_is_sized_to_its_column(): void

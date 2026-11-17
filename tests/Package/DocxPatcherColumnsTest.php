@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Package;
+namespace Quoin\Docx\Tests\Package;
 
 use Dskripchenko\PhpDocx\{Document as DocxDocument, Section};
 use Dskripchenko\PhpDocx\Element\{Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{RunStyle, SectionStart, StyleRegistry};
 use Dskripchenko\PhpDocx\Writer\Word2007Writer;
-use Papercut\Docx\Package\{DocxPatcher, PatchSpec};
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Value\{Color, ColumnRule, ColumnSpec};
+use Quoin\Docx\Package\{DocxPatcher, PatchSpec};
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Value\{Color, ColumnRule, ColumnSpec};
 use PHPUnit\Framework\TestCase;
 
 final class DocxPatcherColumnsTest extends TestCase
@@ -81,7 +81,7 @@ final class DocxPatcherColumnsTest extends TestCase
         $bytes = (new Word2007Writer(new StyleRegistry()))->write(new DocxDocument($one));
         $d = DocxInspector::of(DocxPatcher::patch($bytes, new PatchSpec('Inter', 20, null, new \DateTimeImmutable('2000-01-01'), columnBreaks: 1)));
         self::assertSame(1, $d->count("//w:p/w:r/w:br[@w:type='column']"));
-        self::assertSame(0, $d->count("//w:t[contains(., 'papercut')]"));
+        self::assertSame(0, $d->count("//w:t[contains(., 'quoin')]"));
         self::assertSame(['a', 'b'], $d->values('//w:t'));
     }
 

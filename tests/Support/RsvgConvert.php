@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Support;
+namespace Quoin\Docx\Tests\Support;
 
 use PHPUnit\Framework\TestCase;
 
-/** Finds rsvg-convert for the tests that need it: PAPERCUT_RSVG_CONVERT, else the first on PATH. */
+/** Finds rsvg-convert for the tests that need it: QUOIN_RSVG_CONVERT, else the first on PATH. */
 final class RsvgConvert
 {
     public static function path(): ?string
     {
-        $env = getenv('PAPERCUT_RSVG_CONVERT');
+        $env = getenv('QUOIN_RSVG_CONVERT');
         if (is_string($env) && $env !== '') {
             return $env;
         }

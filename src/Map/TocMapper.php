@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Map;
+namespace Quoin\Docx\Map;
 
 use Dskripchenko\PhpDocx\Element\{BlockElement, Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\ParagraphStyle;
-use Papercut\{Text, Toc};
-use Papercut\Docx\Package\{TocField, TocFieldEntry};
-use Papercut\Docx\Walk\Frame;
-use Papercut\Style\{ComputedStyle, StyleResolver};
-use Papercut\Toc\{TocIndex, TocLine};
-use Papercut\Tree\Visit;
+use Quoin\{Text, Toc};
+use Quoin\Docx\Package\{TocField, TocFieldEntry};
+use Quoin\Docx\Walk\Frame;
+use Quoin\Style\{ComputedStyle, StyleResolver};
+use Quoin\Toc\{TocIndex, TocLine};
+use Quoin\Tree\Visit;
 
 /**
  * Tables of contents as Word sees them: the title as a paragraph, and a marker paragraph that DocxPatcher turns into the
  * TOC field, pre-filled from the PDF layout's page numbers. Headings that are entries get a `_Toc` bookmark to link to.
  *
- * @internal Part of Papercut's engine, not its public API. It may change in any release.
+ * @internal Engine detail, not public API. It may change in any release.
  */
 final class TocMapper
 {
@@ -95,7 +95,7 @@ final class TocMapper
 
     private static function bookmarkName(string $destination): string
     {
-        return sprintf('_Toc%09d', (int) substr($destination, strlen('papercut-toc-')) + 1);
+        return sprintf('_Toc%09d', (int) substr($destination, strlen('quoin-toc-')) + 1);
     }
 
     /** The run properties of an entry's font, size, weight, slant and color, in the order CT_RPr writes them. */

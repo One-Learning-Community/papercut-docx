@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests;
+namespace Quoin\Docx\Tests;
 
-use Papercut\{Document, Page};
-use Papercut\Docx\{DocxExporter, DocxOptions};
-use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Markup\{Markup, MarkupOptions, StyleMode};
+use Quoin\{Document, Page};
+use Quoin\Docx\{DocxExporter, DocxOptions};
+use Quoin\Docx\Tests\Support\DocxInspector;
+use Quoin\Markup\{Markup, MarkupOptions, StyleMode};
 use PHPUnit\Framework\TestCase;
 
 /** Pasted CSS in Original mode exports to Word with the same notes as the PDF, and never throws. */

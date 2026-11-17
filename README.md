@@ -1,17 +1,17 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/One-Learning-Community/papercut/main/art/papercut-logo-dark.svg">
-  <img alt="Papercut" src="https://raw.githubusercontent.com/One-Learning-Community/papercut/main/art/papercut-logo.svg" width="240">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/One-Learning-Community/quoin/main/art/quoin-logo-dark.svg">
+  <img alt="Quoin" src="https://raw.githubusercontent.com/One-Learning-Community/quoin/main/art/quoin-logo.svg" width="177">
 </picture>
 
-# papercut/docx
+# quoin/docx
 
-Word (.docx) export for [Papercut](../../README.md) documents: the same document you render as a PDF, as a file
+Word (.docx) export for [Quoin](../../README.md) documents: the same document you render as a PDF, as a file
 people can open and edit in Word, LibreOffice or Google Docs.
 
-The Word file is written by [`dskripchenko/php-docx`](https://github.com/dskripchenko/php-docx), by Denis Skripchenko. Papercut maps its layout onto
+The Word file is written by [`dskripchenko/php-docx`](https://github.com/dskripchenko/php-docx), by Denis Skripchenko. The exporter maps the layout onto
 Word's paragraphs and tables; php-docx writes the file. Thank you.
 
-**Documentation:** [Word export](https://one-learning-community.github.io/papercut/guide/word-export.html)
+**Documentation:** [Word export](https://one-learning-community.github.io/quoin/guide/word-export.html)
 
 > Word, LibreOffice and Google Docs lay out the file themselves, so spacing and page breaks can differ slightly from
 > the PDF.
@@ -19,20 +19,20 @@ Word's paragraphs and tables; php-docx writes the file. Thank you.
 ## Install
 
 ```
-composer require papercut/docx
+composer require quoin/docx
 ```
 
-It needs PHP 8.4 with `ext-zip`, and `papercut/core`.
+It needs PHP 8.4 with `ext-zip`, and `quoin/core`.
 
 ## Use
 
 ```php
-use Papercut\Docx\DocxExporter;
+use Quoin\Docx\DocxExporter;
 
 $document->export(new DocxExporter())->save('invoice.docx');
 ```
 
-With `papercut/laravel` installed too, `Papercut::view('invoice', $data)->docx()->download('invoice.docx')`, and
+With `quoin/laravel` installed too, `Quoin::view('invoice', $data)->docx()->download('invoice.docx')`, and
 `?format=docx` on a preview route.
 
 ## What readers see
@@ -50,7 +50,7 @@ padding, a border or a background becomes a one-cell table.
 - Pictures Word can't take as they are are drawn at the size the PDF gives them: WebP and AVIF images, image
   `cover` and opacity, and plain QR codes need `ext-gd`; styled QR codes need `ext-imagick` and
   `bacon/bacon-qr-code`; SVG needs librsvg's `rsvg-convert` (set `DocxOptions(rsvgConvert:)`, or
-  `PAPERCUT_RSVG_CONVERT` in Laravel) or an `ext-imagick` that reads SVG. Without them, these are left out and
+  `QUOIN_RSVG_CONVERT` in Laravel) or an `ext-imagick` that reads SVG. Without them, these are left out and
   reported.
 - Opacity is drawn by blending each faded color onto what lies beneath it; text backgrounds keep their exact color.
 - Corner radius on boxes, other content in background and overlay layers, a border or background on a layer

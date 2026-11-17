@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Papercut\Docx\Tests\Map;
+namespace Quoin\Docx\Tests\Map;
 
-use Papercut\Docx\Map\Units;
-use Papercut\Value\Color;
+use Quoin\Docx\Map\Units;
+use Quoin\Value\Color;
 use PHPUnit\Framework\TestCase;
 
 final class UnitsTest extends TestCase
