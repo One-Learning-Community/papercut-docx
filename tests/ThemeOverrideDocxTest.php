@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Papercut\Docx\Tests;
 
-use Papercut\{Document, Page, Text, Toc};
+use Papercut\{Column, Document, Page, Text, Toc};
+use Papercut\Decorator\ChoiceList;
 use Papercut\Docx\DocxExporter;
 use Papercut\Docx\Tests\Support\DocxInspector;
-use Papercut\Style\ThemeOverride;
-use Papercut\Value\Color;
+use Papercut\Style\{Style, ThemeOverride};
+use Papercut\Value\{Color, Length};
 use PHPUnit\Framework\TestCase;
 
 use function Papercut\pt;
@@ -59,5 +60,32 @@ final class ThemeOverrideDocxTest extends TestCase
         $empty = $make()->theme(new ThemeOverride())->export(new DocxExporter())->bytes();
 
         self::assertSame($plain, $empty);
+    }
+
+    public function test_choice_markers_in_a_sized_variant_keep_their_shape(): void
+    {
+        $d = self::export(Document::make(Page::a4()->body(Column::make(
+            ChoiceList::radio()->variant('large')->option('Yes', true)->option('No'),
+            ChoiceList::checkbox()->variant('large')->option('Tea', true)->option('Coffee'),
+        )))->theme(new ThemeOverride(styles: ['choice.marker.large' => Style::make(width: Length::em(1), height: Length::em(1))])));
+
+        self::assertSame(['◉', '○', '▣', '☐'], array_values(array_filter(
+            $d->values('//w:t'),
+            static fn (string $t): bool => in_array($t, ['◉', '○', '▣', '☐'], true),
+        )));
+        // Sized from the 1em marker (10pt) at the glyph's 1.25 scale: 12.5pt, 25 half-points.
+        self::assertSame('25', $d->value('//w:r[w:t="○"]/w:rPr/w:sz/@w:val'));
+        // One symbol font for all four, listed in the font table with its PANOSE number for readers without it.
+        self::assertSame(['Segoe UI Symbol'], array_values(array_unique($d->values('//w:r[w:t="○" or w:t="☐"]/w:rPr/w:rFonts/@w:ascii'))));
+        self::assertSame('020B0502040204020203', $d->value('//w:font[@w:name="Segoe UI Symbol"]/w:panose1/@w:val', 'word/fontTable.xml'));
+    }
+
+    public function test_radio_markers_stay_round_up_to_the_largest_marker(): void
+    {
+        $d = self::export(Document::make(Page::a4()->body(Column::make(
+            ChoiceList::radio()->variant('big')->option('Yes', true)->option('No'),
+        )))->theme(new ThemeOverride(styles: ['choice.marker.big' => Style::make(width: Length::em(2), height: Length::em(2))])));
+
+        self::assertSame(['◉', '○'], array_values(array_filter($d->values('//w:t'), static fn (string $t): bool => in_array($t, ['◉', '○', '▣', '☐'], true))));
     }
 }

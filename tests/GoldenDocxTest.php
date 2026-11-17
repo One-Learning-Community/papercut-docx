@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Papercut\Docx\Tests;
 
 use Papercut\Docx\DocxExporter;
+use Papercut\Docx\Map\Raster;
 use Papercut\Docx\Tests\Support\{Documents, DocxInspector};
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -30,6 +31,17 @@ final class GoldenDocxTest extends TestCase
         \assert(is_string($name));
         $doc = Documents::load($file)->createdAt(new \DateTimeImmutable('2026-01-01T00:00:00Z'));
         $docx = DocxInspector::of($doc->export(new DocxExporter())->bytes());
+        // Pictures drawn from SVG are baked into PNGs by Imagick, and a build without SVG support leaves them out of
+        // the document, by design. The approved copies were made with it, so there is nothing to compare without it.
+        $types = self::DIR . '/' . $name . '/[Content_Types].xml';
+        if (
+            !str_contains($docx->part('[Content_Types].xml'), 'Extension="png"')
+            && !Raster::detect()->imagickSvg
+            && is_file($types)
+            && str_contains((string) file_get_contents($types), 'Extension="png"')
+        ) {
+            self::markTestSkipped('The approved copy has pictures drawn from SVG, which needs ext-imagick built with SVG support.');
+        }
         $dir = self::DIR . '/' . $name;
         $update = getenv('UPDATE_DOCX_GOLDEN') === '1';
         if ($update) {

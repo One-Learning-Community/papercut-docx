@@ -31,6 +31,14 @@ final class WordFonts
         return $name;
     }
 
+    /** A font the export names itself, not one from the FontSet (the choice-marker symbol font), with what the font table should say. */
+    public function fixed(string $name, FontInfo $info): string
+    {
+        $this->written[$name] ??= $info;
+
+        return $name;
+    }
+
     /** @return array<string, ?FontInfo> */
     public function written(): array
     {

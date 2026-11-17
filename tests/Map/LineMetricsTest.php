@@ -28,6 +28,20 @@ final class LineMetricsTest extends TestCase
         self::assertSame(1.2, (new LineMetrics(new FontSet()))->natural('Nope'));
     }
 
+    public function test_bundled_inter_descent_and_cap_height(): void
+    {
+        $m = new LineMetrics(new FontSet());
+        self::assertSame(0.2412109375, $m->descent('Inter'));
+        self::assertSame(0.7275390625, $m->capHeight('Inter'));
+    }
+
+    public function test_unknown_family_descent_and_cap_height_fall_back(): void
+    {
+        $m = new LineMetrics(new FontSet());
+        self::assertSame(0.2, $m->descent('Nope'));
+        self::assertSame(0.7, $m->capHeight('Nope'));
+    }
+
     public function test_font_with_no_line_height_falls_back(): void
     {
         // hhea ascender, descender and line gap all 0: a ratio of 0 would divide by zero downstream.
@@ -41,6 +55,9 @@ final class LineMetricsTest extends TestCase
         try {
             $m = new LineMetrics((new FontSet())->with(new FontFace('Flat', $path)));
             self::assertSame(1.2, $m->natural('Flat'));
+            self::assertSame(0.2, $m->descent('Flat'));
+            // No OS/2 table to give a cap height.
+            self::assertSame(0.7, $m->capHeight('Flat'));
         } finally {
             unlink($path);
         }

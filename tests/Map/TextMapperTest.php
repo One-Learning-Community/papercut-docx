@@ -14,7 +14,7 @@ use Papercut\Export\Fidelity;
 use Papercut\Exception\InvalidValue;
 use Papercut\Style\Style;
 use Papercut\Text\FontSet;
-use Papercut\Value\Color;
+use Papercut\Value\{Color, Length};
 use PHPUnit\Framework\TestCase;
 
 use function Papercut\pt;
@@ -170,12 +170,41 @@ final class TextMapperTest extends TestCase
         self::assertSame('▣', $glyph($box(View::make())));
         self::assertSame('○', $glyph($box()->radius(pt(4))));
         self::assertSame('◉', $glyph($box(View::make())->radius(pt(4))));
+        // Round once the corners take most of each side, as a radio enlarged without its radius reads round.
+        $sized = static fn (float $radius): View => View::make()->width(pt(10))->height(pt(10))->border(pt(1), '#000000')->radius(pt($radius));
+        self::assertSame('○', $glyph($sized(3.75)));
+        self::assertSame('☐', $glyph($sized(1.25)));
+        self::assertSame('☐', $glyph($sized(2.5)));
+        // A third exactly is still a square: the built-in checkbox radius on a box shrunk to half (0.375em).
+        self::assertSame('☐', $glyph(View::make()->width(pt(3.75))->height(pt(3.75))->border(pt(0.5), '#000000')->radius(pt(1.25))));
         self::assertNull($glyph(View::make()->width(pt(40))->height(pt(40))->border(pt(1), '#000000')));
         self::assertNull($glyph(View::make()->width(pt(8))->height(pt(8))));
         // A colour swatch is a picture of its fill, not a marker: it keeps its box.
         self::assertNull($glyph($box()->background('#2563eb')));
         self::assertSame('☐', $glyph($box()->background('#ffffff')));
         self::assertNull($glyph($box(Text::make('x'))));
+    }
+
+    public function test_glyph_paragraph_centres_the_marker_on_the_label_capitals(): void
+    {
+        // A 1em marker at 10pt with a 1.4 line: the glyph is 12.5pt in Segoe UI Symbol (all four markers, one size).
+        $marker = View::make()->width(Length::em(1))->height(Length::em(1))->border(pt(1), '#000000');
+        $p = $this->mapper()->glyphParagraph('○', self::styleOf($marker));
+        $run = $p->children[0];
+        self::assertInstanceOf(Run::class, $run);
+        self::assertSame('Segoe UI Symbol', $run->style->fontFamily);
+        self::assertSame('Segoe UI Symbol', $run->style->fontFamilyEastAsia);
+        self::assertSame(25, $run->style->sizeHalfPoints);
+        // An exact line: Inter's cap centre sits 14 - 2.41 - 3.64 = 7.95pt down the label's line, and the glyph's
+        // centre 0.48 of its size above the line's bottom, so the line is 7.95 + 6 = 13.95pt (279 twips).
+        self::assertSame('exact', $p->style->lineSpacingRule);
+        self::assertSame(279, $p->style->lineSpacingTwips);
+
+        $small = View::make()->width(Length::em(0.75))->height(Length::em(0.75))->border(pt(1), '#000000');
+        self::assertSame(250, $this->mapper()->glyphParagraph('○', self::styleOf($small))->style->lineSpacingTwips);
+        // Too big to centre on the capitals without its top cut off: it hangs from the top of the line instead.
+        $big = View::make()->width(Length::em(2))->height(Length::em(2))->border(pt(1), '#000000');
+        self::assertSame(425, $this->mapper()->glyphParagraph('○', self::styleOf($big))->style->lineSpacingTwips);
     }
 
     public function test_disallowed_span_link_throws(): void
