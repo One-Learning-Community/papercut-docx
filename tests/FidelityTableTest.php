@@ -67,7 +67,7 @@ final class FidelityTableTest extends TestCase
         self::export($build(), strict: true);
     }
 
-    public function test_colours_with_alpha_are_blended_silently(): void
+    public function test_colors_with_alpha_are_blended_silently(): void
     {
         $d = self::export(Column::make('a')->padding(pt(2))->background('rgba(255, 0, 0, 0.5)'));
         self::assertSame('ff8080', $d->value('//w:shd/@w:fill'));

@@ -9,8 +9,8 @@ use Papercut\Text\{FontSet, TrueTypeTables};
 /**
  * A font's vertical metrics as shares of its size. natural() is the line height (hhea ascender - descender
  * + lineGap over unitsPerEm): Word, LibreOffice and Google Docs all take "single" spacing from it, so a
- * Papercut line height L becomes the multiple L / natural, which every reader can honour (Google Docs has
- * no exact rule). descent() (hhea) and capHeight() (OS/2) place a line's capitals, which choice markers centre on.
+ * Papercut line height L becomes the multiple L / natural, which every reader can honor (Google Docs has
+ * no exact rule). descent() (hhea) and capHeight() (OS/2) place a line's capitals, which choice markers center on.
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
  */

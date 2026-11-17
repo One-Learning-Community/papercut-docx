@@ -25,7 +25,7 @@ final class CodeBlockDocxTest extends TestCase
         self::assertContains('F6F8FA', array_map('strtoupper', $d->values(self::P . '/w:pPr/w:shd/@w:fill')));
     }
 
-    public function test_comment_run_is_coloured_and_italic(): void
+    public function test_comment_run_is_colored_and_italic(): void
     {
         $d = self::export(self::block());
         self::assertNotSame([], $d->values(self::P . '/w:r[translate(w:rPr/w:color/@w:val, "ABCDEF", "abcdef")="8b949e" and w:rPr/w:i]/w:t'));

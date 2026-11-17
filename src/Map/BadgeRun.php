@@ -12,7 +12,7 @@ use Papercut\Style\{BorderStyle, ComputedStyle};
 /**
  * The one place a badge becomes Word text: a shaded run with a run border, two no-break spaces of padding on each
  * side, and no-break spaces in place of the label's own spaces so it never wraps. Word has no inline box, so the
- * corners stay square. A badge with no border of its own gets a border in its fill colour, which gives it a little
+ * corners stay square. A badge with no border of its own gets a border in its fill color, which gives it a little
  * height in Word and LibreOffice; Google Docs ignores run borders and shows the shading alone.
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
@@ -22,7 +22,7 @@ final class BadgeRun
     public const string NBSP = "\u{00A0}";
     /** No-break spaces of padding on each side of the label. */
     private const int PAD = 2;
-    /** Width (eighths of a point) of the border drawn in the fill colour. */
+    /** Width (eighths of a point) of the border drawn in the fill color. */
     private const int FILL_BORDER = 4;
     private const float EPSILON = 0.01;
 

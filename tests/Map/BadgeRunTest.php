@@ -83,7 +83,7 @@ final class BadgeRunTest extends TestCase
         self::assertSame(1, $d->count('//w:r[w:t="' . self::NBSP . self::NBSP . 'Pill' . self::NBSP . self::NBSP . '"][w:rPr/w:shd[@w:fill="ffeecc"]][w:rPr/w:bdr[@w:color="ffeecc"]]'));
     }
 
-    public function test_a_centred_block_badge_keeps_its_alignment(): void
+    public function test_a_centered_block_badge_keeps_its_alignment(): void
     {
         $d = self::export(View::make(Badge::make('Mid')->alignSelf(Align::Center), Badge::make('End')->alignSelf(Align::End)));
         self::assertSame(0, $d->count('//w:tbl'));
@@ -98,7 +98,7 @@ final class BadgeRunTest extends TestCase
         self::assertSame(1, $d->count('/w:document/w:body/w:p/w:r[w:t="' . self::NBSP . self::NBSP . 'Solo' . self::NBSP . self::NBSP . '"][w:rPr/w:shd[@w:fill="fee2e2"]]'));
     }
 
-    public function test_a_bordered_filled_inline_badge_has_a_border_in_the_border_colour(): void
+    public function test_a_bordered_filled_inline_badge_has_a_border_in_the_border_color(): void
     {
         $d = self::export(self::inline(Span::badge('Both', 'warning', 'outline')));
         $run = '//w:r[contains(w:t, "Both")]/w:rPr/w:bdr';

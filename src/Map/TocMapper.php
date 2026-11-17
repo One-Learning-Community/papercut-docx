@@ -98,7 +98,7 @@ final class TocMapper
         return sprintf('_Toc%09d', (int) substr($destination, strlen('papercut-toc-')) + 1);
     }
 
-    /** The run properties of an entry's font, size, weight, slant and colour, in the order CT_RPr writes them. */
+    /** The run properties of an entry's font, size, weight, slant and color, in the order CT_RPr writes them. */
     private function runProperties(ComputedStyle $s): string
     {
         $font = htmlspecialchars($this->fonts->name($s->fontFamily), ENT_XML1 | ENT_QUOTES, 'UTF-8');

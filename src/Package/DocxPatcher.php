@@ -11,7 +11,7 @@ use Papercut\Value\ColumnSpec;
 
 /**
  * Fixes php-docx's output where it can't express what Papercut needs: `left`/`right` alignment
- * (Google Docs ignores `start`/`end`), run shading in any colour, the theme's default font, and the document language.
+ * (Google Docs ignores `start`/`end`), run shading in any color, the theme's default font, and the document language.
  * It edits the exact markup php-docx writes and throws when that markup changes, so an upgrade fails loudly.
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
@@ -20,10 +20,10 @@ final class DocxPatcher
 {
     private const string DOC_DEFAULTS = '<w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault>';
 
-    /** Marks a run's highlight as run shading in a colour of its own; see shading(). */
+    /** Marks a run's highlight as run shading in a color of its own; see shading(). */
     private const string SHADING = 'papercut-shd-';
 
-    /** Marks a border colour as also carrying the border's space, in points; see spaced(). */
+    /** Marks a border color as also carrying the border's space, in points; see spaced(). */
     private const string SPACE = 'papercut-sp';
 
     /** The text of a run that patch() turns into a column break (`w:br w:type="column"`); see columnBreak(). */
@@ -55,7 +55,7 @@ final class DocxPatcher
         return self::SHADING . ($fill ?? 'none') . '-bdr' . $eighths . '-' . $style . '-' . $hex;
     }
 
-    /** A border colour that carries its padding: patch() writes the padding as the border's space. */
+    /** A border color that carries its padding: patch() writes the padding as the border's space. */
     public static function spaced(int $points, string $hex): string
     {
         return self::SPACE . $points . '-' . $hex;
@@ -130,7 +130,7 @@ final class DocxPatcher
 
     /**
      * Puts the children of every `w:rPr` in schema order. php-docx writes them in its own order, which the validator
-     * rejects (underline and strike before colour and size). A `w:rPr` with content this cannot read is left alone.
+     * rejects (underline and strike before color and size). A `w:rPr` with content this cannot read is left alone.
      */
     private static function orderRunProperties(string $xml): string
     {
@@ -506,7 +506,7 @@ final class DocxPatcher
     private const array LABEL_PROPS = ['rFonts', 'b', 'bCs', 'i', 'iCs', 'color', 'sz', 'szCs'];
 
     /**
-     * The rest of a numbered paragraph's `w:pPr` with the first run's font, weight, slant, colour and size on the paragraph mark,
+     * The rest of a numbered paragraph's `w:pPr` with the first run's font, weight, slant, color and size on the paragraph mark,
      * which is what Word draws the list label with. Goes after everything but `w:sectPr`; merges with a mark `w:rPr` already there.
      */
     private static function withLabelFormat(string $pPr, string $content): string

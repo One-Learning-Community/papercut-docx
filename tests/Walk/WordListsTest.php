@@ -377,7 +377,7 @@ final class WordListsTest extends TestCase
         self::assertSame('32', $d->value('//w:p[w:pPr/w:numPr]/w:pPr/w:rPr/w:szCs/@w:val'));
     }
 
-    public function test_label_takes_bold_and_colour_of_the_item(): void
+    public function test_label_takes_bold_and_color_of_the_item(): void
     {
         $d = self::export(ListNode::unordered(ListItem::make(Text::make('loud')->bold()->color('red-600'))));
         self::assertSame(1, $d->count('//w:p[w:pPr/w:numPr]/w:pPr/w:rPr/w:b'));

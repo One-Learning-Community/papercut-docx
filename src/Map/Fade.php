@@ -8,7 +8,7 @@ use Papercut\Style\ComputedStyle;
 use Papercut\Value\Color;
 
 /**
- * Opacity, which the PDF applies to each thing a faded node draws: Word has none, so each colour is blended
+ * Opacity, which the PDF applies to each thing a faded node draws: Word has none, so each color is blended
  * onto what lies beneath it (the nearest fill, else white) and written opaque.
  *
  * @internal Part of Papercut's engine, not its public API. It may change in any release.
@@ -39,7 +39,7 @@ final class Fade
         return $fill === null || $fill->isTransparent() ? $backdrop : self::blend($fill, 1.0, $backdrop);
     }
 
-    /** $c at $opacity (times its own alpha) laid over $backdrop, as an opaque colour; null stays null. */
+    /** $c at $opacity (times its own alpha) laid over $backdrop, as an opaque color; null stays null. */
     public static function over(?Color $c, float $opacity, Color $backdrop): ?Color
     {
         return $c === null || $opacity >= 1.0 ? $c : self::blend($c, $opacity, $backdrop);

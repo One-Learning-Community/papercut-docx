@@ -192,7 +192,7 @@ final class RowMapper
     }
 
     /**
-     * Folds the row's padding into the cells beside it, gives content-sized items slack from neighbouring
+     * Folds the row's padding into the cells beside it, gives content-sized items slack from neighboring
      * empty space (Word's text never measures exactly like ours), and drops empty slivers.
      *
      * @param list<Segment> $segs
@@ -216,7 +216,7 @@ final class RowMapper
             $segs = [...array_slice($segs, 0, $n - 2), $lastItem];
             $n--;
         }
-        // Slack: up to 15% + 4pt from a neighbour's free space, on the side the text doesn't align to.
+        // Slack: up to 15% + 4pt from a neighbor's free space, on the side the text doesn't align to.
         for ($i = 0; $i < $n; $i++) {
             $style = $segs[$i]['item']['style'] ?? null;
             // A box with a background or border would visibly grow, so only plain content gets slack.

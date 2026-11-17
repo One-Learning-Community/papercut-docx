@@ -263,7 +263,7 @@ final class DocxVisitor implements TreeVisitor
             $frame->isRow => [$this->inline->line($style, $frame, $at->path()) ?? $this->rows->row($style, $frame, $at->path())],
             default => Flow::blocks($frame, $this->lists->settled()),
         };
-        // A column centres or end-aligns a child that doesn't stretch; for a paragraph that is its alignment.
+        // A column centers or end-aligns a child that doesn't stretch; for a paragraph that is its alignment.
         $cross = $parent->isRow ? Align::Stretch : ($style->alignSelf ?? $parent->style->alignItems ?? Align::Stretch);
         $crossJc = match ($cross) {
             Align::Center => Alignment::Center,

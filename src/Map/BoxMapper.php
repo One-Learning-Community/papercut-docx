@@ -80,7 +80,7 @@ final class BoxMapper
 
         return new Table(
             [new TableRow(
-                // A column box packed to its end or centre (a signature line) places its content the same way in the cell.
+                // A column box packed to its end or center (a signature line) places its content the same way in the cell.
                 [new TableCell(self::cellContent($blocks), $this->cellStyle($s, Units::tw($width), v: match ($s->justify) {
                     Justify::End => VerticalAlign::Bottom,
                     Justify::Center => VerticalAlign::Center,
@@ -175,7 +175,7 @@ final class BoxMapper
         }
         $style = $s->borderStyle === BorderStyle::Dashed ? DocxBorderStyle::Dashed : DocxBorderStyle::Single;
         $color = Units::hex($s->borderColor);
-        // php-docx writes w:space="0"; DocxPatcher reads the padding out of the colour and writes it as the space.
+        // php-docx writes w:space="0"; DocxPatcher reads the padding out of the color and writes it as the space.
         $side = static fn (Length $width, Length $pad): Border => new Border($style, Units::eighths($width->points), DocxPatcher::spaced((int) round(min(31.0, $pad->points)), $color));
         $borders = new BorderSet(
             $side($w->top, $s->padding->top),

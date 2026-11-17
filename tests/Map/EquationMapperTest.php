@@ -100,7 +100,7 @@ final class EquationMapperTest extends TestCase
         self::assertSame(2, self::n($xp, '//m:oMathPara'));
     }
 
-    public function test_colour_and_size(): void
+    public function test_color_and_size(): void
     {
         $d = self::export(self::frac()->color('#cc0000')->size(pt(20)));
         $xp = self::math($d);

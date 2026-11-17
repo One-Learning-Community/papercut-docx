@@ -65,20 +65,20 @@ final class InlineMathDocxTest extends TestCase
         self::assertSame(2, self::n($xp, '//w:p/m:oMath'));
     }
 
-    public function test_inline_carries_size_and_colour(): void
+    public function test_inline_carries_size_and_color(): void
     {
         $xp = self::export(Text::spans(Span::math('x'))->size(\Papercut\pt(20))->color('#b91c1c'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:color[@w:val="b91c1c"]'));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:sz[@w:val="40"]'));
     }
 
-    public function test_own_colour_fades_with_the_text_opacity(): void
+    public function test_own_color_fades_with_the_text_opacity(): void
     {
         $xp = self::export(Text::spans(new Span('', Style::make(color: Color::hex('#ff0000')), math: Math::row('x')))->opacity(0.5));
         self::assertSame(1, self::n($xp, '//m:oMath//w:rPr/w:color[@w:val="ff8080"]'));
     }
 
-    public function test_own_size_and_colour_win_over_the_paragraphs(): void
+    public function test_own_size_and_color_win_over_the_paragraphs(): void
     {
         $xp = self::export(Text::spans(new Span('', Style::make(color: Color::hex('#ff0000'), fontSize: \Papercut\pt(20)), math: Math::row('x')))
             ->size(\Papercut\pt(10))->color('#0000ff'));

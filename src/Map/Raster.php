@@ -56,7 +56,7 @@ final readonly class Raster
             // A wrong program, or one that can't start (another architecture, a noexec mount), would otherwise
             // fall back to Imagick on every SVG without a word.
             if (!str_contains(self::probe($rsvgConvert), 'rsvg-convert')) {
-                throw $invalid('it does not run as rsvg-convert (rsvg-convert --version gave nothing recognisable)');
+                throw $invalid('it does not run as rsvg-convert (rsvg-convert --version gave nothing recognizable)');
             }
         }
 
@@ -211,7 +211,7 @@ final readonly class Raster
             $im->setFormat('SVG');
             $im->readImageBlob($xml, 'image.svg');
             // The reader's format sticks to the wand until it is set again.
-            // Always RGBA: left to choose, ImageMagick 7.1.2 writes an all-transparent image as 1-bit grey
+            // Always RGBA: left to choose, ImageMagick 7.1.2 writes an all-transparent image as 1-bit gray
             // with a tRNS chunk, which not every reader takes as transparent.
             $im->setFormat('PNG32');
             $im->setImageFormat('PNG32');

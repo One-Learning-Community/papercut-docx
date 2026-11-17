@@ -59,7 +59,7 @@ final class Units
         return (int) round($points * 12700);
     }
 
-    /** Hex without '#', alpha blended onto white (Word colours have no alpha). */
+    /** Hex without '#', alpha blended onto white (Word colors have no alpha). */
     public static function hex(Color $c): string
     {
         $a = max(0.0, min(1.0, $c->alpha));
@@ -68,7 +68,7 @@ final class Units
         return sprintf('%02x%02x%02x', $mix($c->r), $mix($c->g), $mix($c->b));
     }
 
-    /** Null for no colour or a fully transparent one. */
+    /** Null for no color or a fully transparent one. */
     public static function fill(?Color $c): ?string
     {
         return $c === null || $c->isTransparent() ? null : self::hex($c);

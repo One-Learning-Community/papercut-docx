@@ -27,7 +27,7 @@ final class TextMapper
     private const string SPACES = " \t\n\r\f";
     private const string MARKER_FONT = 'Segoe UI Symbol';
     /**
-     * How far a marker's centre sits above the bottom of an exact line, as a share of its size. Measured in
+     * How far a marker's center sits above the bottom of an exact line, as a share of its size. Measured in
      * Word for Mac with Segoe UI Symbol markers beside Arial at 10pt and 14pt, 0.75em to 2em markers.
      */
     private const float MARKER_DROP = 0.48;
@@ -68,7 +68,7 @@ final class TextMapper
         $atStart = true;
         $endsSpace = false;
         foreach ($t->spanList() as $span) {
-            // A span's own colours fade with the text; inherited ones already have.
+            // A span's own colors fade with the text; inherited ones already have.
             $own = ($this->theme ?? Theme::default())->spanStyle($span);
             $cs = $this->styles?->span($s, $own) ?? $s->child($own);
             $spanBg = Fade::over($own->background, $s->opacity, $backdrop);
@@ -84,7 +84,7 @@ final class TextMapper
                 $rs = new RunStyle(...[...get_object_vars($rs), 'highlight' => DocxPatcher::shading($bg)]);
             }
             if ($span->math !== null) {
-                // An inline equation: a marker run for DocxPatcher, in the span's size, colour and shading, with no whitespace of its own.
+                // An inline equation: a marker run for DocxPatcher, in the span's size, color and shading, with no whitespace of its own.
                 $runs[] = [$this->equations->run($span->math, $faded, $bg), $span->href ?? $blockHref, false, false];
                 $atStart = false;
                 $endsSpace = false;
@@ -102,7 +102,7 @@ final class TextMapper
                 if ($cs->radius > 0.0) {
                     $this->fidelity->approximated('badge in a line', $at->path());
                 }
-                // Spaces just inside the badge space it from its neighbours, as in the PDF.
+                // Spaces just inside the badge space it from its neighbors, as in the PDF.
                 $space = new Run(' ', $this->runStyle($s));
                 if (!$atStart && !$endsSpace && strspn($span->text, self::SPACES) > 0) {
                     $runs[] = [$space, $span->href ?? $blockHref, false, true];
@@ -182,7 +182,7 @@ final class TextMapper
 
     /**
      * Runs in Word order, each with its link. A line break between two runs of one link belongs to that link, and
-     * neighbouring runs of one link share a single hyperlink element.
+     * neighboring runs of one link share a single hyperlink element.
      *
      * @param list<array{Run, ?string, bool, bool}> $runs
      * @return list<InlineElement>
@@ -285,7 +285,7 @@ final class TextMapper
             || $s->borderWidth->horizontal() <= 0.0) {
             return null;
         }
-        // A coloured fill makes it a swatch, which a character would lose.
+        // A colored fill makes it a swatch, which a character would lose.
         $fill = Units::fill($s->background);
         if ($fill !== null && strtoupper($fill) !== 'FFFFFF') {
             return null;
@@ -306,13 +306,13 @@ final class TextMapper
     }
 
     /**
-     * The marker character in its cell, centred on the capitals of the label's first line, which sits in the
+     * The marker character in its cell, centered on the capitals of the label's first line, which sits in the
      * next cell with the same font, size and line height. The marker font is named so all four characters
      * come from one font at one size: Word ships Segoe UI Symbol on Windows and Mac, and a reader without it
      * falls back. Left to the text font, ○ came from it and ◉ ☐ ▣ from a bigger fallback font.
      *
-     * Word honours neither a raised run nor centring here (an auto line grows around a raised glyph), so the
-     * line is exact and its height places the glyph, whose centre Word sets a fixed share of its size above the
+     * Word honors neither a raised run nor centering here (an auto line grows around a raised glyph), so the
+     * line is exact and its height places the glyph, whose center Word sets a fixed share of its size above the
      * line's bottom. This is exact only when Word has the label's font: a font it stands in for has other metrics.
      * The label is taken to share the marker's font, size and line height, as the PDF's one-line slot does. Google
      * Docs turns an exact height into a multiple of its own line, so there the marker sits less exactly; Word is
@@ -328,8 +328,8 @@ final class TextMapper
         // Word adds a multiple's extra space above the text, so the label's baseline sits its descent above the line's bottom.
         $capitals = $s->lineHeight * $s->fontSize
             - ($this->metrics->descent($s->fontFamily) + $this->metrics->capHeight($s->fontFamily) / 2) * $s->fontSize;
-        // A marker too big to centre there hangs from the top of the line rather than lose its top.
-        $centre = max($capitals, self::MARKER_INK_HALF * $size);
+        // A marker too big to center there hangs from the top of the line rather than lose its top.
+        $center = max($capitals, self::MARKER_INK_HALF * $size);
         $font = $this->fonts->fixed(self::MARKER_FONT, new FontInfo(FontClass::Sans, self::MARKER_PANOSE, false));
 
         return new Paragraph(
@@ -339,7 +339,7 @@ final class TextMapper
                 fontFamily: $font,
                 fontFamilyEastAsia: $font,
             ))],
-            new ParagraphStyle(lineSpacingTwips: Units::tw($centre + self::MARKER_DROP * $size), lineSpacingRule: 'exact'),
+            new ParagraphStyle(lineSpacingTwips: Units::tw($center + self::MARKER_DROP * $size), lineSpacingRule: 'exact'),
         );
     }
 

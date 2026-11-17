@@ -52,11 +52,11 @@ padding, a border or a background becomes a one-cell table.
   `bacon/bacon-qr-code`; SVG needs librsvg's `rsvg-convert` (set `DocxOptions(rsvgConvert:)`, or
   `PAPERCUT_RSVG_CONVERT` in Laravel) or an `ext-imagick` that reads SVG. Without them, these are left out and
   reported.
-- Opacity is drawn by blending each faded colour onto what lies beneath it; text backgrounds keep their exact colour.
+- Opacity is drawn by blending each faded color onto what lies beneath it; text backgrounds keep their exact color.
 - Corner radius on boxes, other content in background and overlay layers, a border or background on a layer
   picture, PDF page templates
   and embedded PDF pages are left out and reported (strict mode throws on them).
 
 Approximations and omissions are reported through `ExportOptions::onWarning` with the node's path, as with HTML
-export. How the layout itself is written (rows as tables, boxes as one-cell tables, colours with transparency blended
+export. How the layout itself is written (rows as tables, boxes as one-cell tables, colors with transparency blended
 onto white, fonts by name) applies to every document and isn't reported each time.

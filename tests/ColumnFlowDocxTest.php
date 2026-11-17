@@ -23,7 +23,7 @@ final class ColumnFlowDocxTest extends TestCase
         $d = self::export(Page::a4()->body(ColumnFlow::make(Text::make('one'), Text::make('two'))->columns(2)));
         self::assertSame(2, $d->count(self::ANY_SECT));
         self::assertSame(1, $d->count('//w:cols'));
-        // The flow's section is the first one and starts the page; the levelling section after it is the body's own.
+        // The flow's section is the first one and starts the page; the leveling section after it is the body's own.
         self::assertSame(1, $d->count('/w:document/w:body/w:p[2]/w:pPr/w:sectPr/w:cols'));
         self::assertSame(0, $d->count('/w:document/w:body/w:p/w:pPr/w:sectPr/w:type'));
         self::assertSame(1, $d->count('/w:document/w:body/w:sectPr/w:type[@w:val="continuous"]'));
@@ -63,13 +63,13 @@ final class ColumnFlowDocxTest extends TestCase
         self::assertSame(1, $d->count('/w:document/w:body/w:p[2]/w:pPr/w:sectPr/w:cols'));
     }
 
-    public function test_flow_before_a_new_template_gets_a_levelling_section(): void
+    public function test_flow_before_a_new_template_gets_a_leveling_section(): void
     {
         $d = self::export(Document::make(
             Page::a4()->body(ColumnFlow::make(Text::make('a'), Text::make('b'))->columns(2)),
             Page::a5()->body(Text::make('next')),
         ));
-        // flow (next page), hairline levelling (continuous), A5 section (next page).
+        // flow (next page), hairline leveling (continuous), A5 section (next page).
         self::assertSame(3, $d->count(self::ANY_SECT));
         self::assertSame(['continuous'], $d->values('//w:sectPr/w:type/@w:val'));
         self::assertSame(1, $d->count('//w:cols'));
@@ -79,7 +79,7 @@ final class ColumnFlowDocxTest extends TestCase
         self::assertSame(0, $d->count('/w:document/w:body/w:sectPr/w:type'));
     }
 
-    public function test_last_flow_in_the_document_gets_a_levelling_section(): void
+    public function test_last_flow_in_the_document_gets_a_leveling_section(): void
     {
         $d = self::export(Page::a4()->body(Text::make('t'), ColumnFlow::make(Text::make('a'))->columns(2)));
         self::assertSame(3, $d->count(self::ANY_SECT));
@@ -164,7 +164,7 @@ final class ColumnFlowDocxTest extends TestCase
             ColumnFlow::make(Text::make('a'))->columns(2),
             ColumnFlow::make(Text::make('b'))->columns(3),
         ));
-        // plain, cols 2, cols 3, levelling.
+        // plain, cols 2, cols 3, leveling.
         self::assertSame(4, $d->count(self::ANY_SECT));
         self::assertSame(['2', '3'], $d->values('//w:cols/@w:num'));
         self::assertSame(['continuous', 'continuous', 'continuous'], $d->values('//w:sectPr/w:type/@w:val'));

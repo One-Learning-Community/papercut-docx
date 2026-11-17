@@ -15,7 +15,7 @@ use Papercut\Value\Auto;
 
 /**
  * A row of nothing but inline content (text, links, badges) as one paragraph, so a list bullet shares its line and
- * a badge wraps with its neighbours instead of inside a narrow table cell.
+ * a badge wraps with its neighbors instead of inside a narrow table cell.
  *
  * A row qualifies when, in the PDF, it is a single flex line packed at the start, undecorated and unsized, and every
  * item is one paragraph of text runs (links included) that is content-sized: it does not grow, has no width, height,
