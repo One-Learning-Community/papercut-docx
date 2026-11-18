@@ -8,7 +8,7 @@ use Dskripchenko\PhpDocx\Element\{Paragraph, Run};
 use Dskripchenko\PhpDocx\Style\{ParagraphStyle, RunStyle};
 use Quoin\Docx\Package\DocxPatcher;
 use Quoin\Equation;
-use Quoin\Math\Render\{OmmlWriter, RunFormat};
+use Phactorial\Render\{OmmlWriter, RunFormat};
 use Quoin\Style\{ComputedStyle, TextAlign};
 
 /**
@@ -46,7 +46,7 @@ final class EquationMapper
     }
 
     /** An inline equation: a marker run that DocxPatcher swaps for an `m:oMath` between the paragraph's runs. */
-    public function run(\Quoin\Math\Node\Node $math, ComputedStyle $s, ?string $shadingHex = null): Run
+    public function run(\Phactorial\Node\Node $math, ComputedStyle $s, ?string $shadingHex = null): Run
     {
         $id = count($this->maths) + 1;
         $this->maths[$id] = OmmlWriter::oMath($math, new RunFormat(Units::hex($s->color), Units::halfPoints($s->fontSize), $shadingHex));

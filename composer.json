@@ -29,17 +29,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "quoin/core": "0.17.x-dev"
-                }
-            }
-        },
-        {
-            "type": "path",
-            "url": "../math",
-            "options": {
-                "symlink": true,
-                "versions": {
-                    "quoin/math": "0.17.x-dev"
+                    "quoin/core": "0.18.x-dev"
                 }
             }
         }
@@ -48,8 +38,8 @@
         "php": "^8.4",
         "ext-zip": "*",
         "dskripchenko/php-docx": "^1.18",
-        "quoin/core": "^0.17",
-        "quoin/math": "^0.17"
+        "quoin/core": "^0.18",
+        "phactorial/phactorial": "^0.18"
     },
     "require-dev": {
         "bacon/bacon-qr-code": "^3.1",

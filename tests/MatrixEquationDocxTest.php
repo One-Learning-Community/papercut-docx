@@ -7,7 +7,7 @@ namespace Quoin\Docx\Tests;
 use Quoin\{Document, Equation, Page};
 use Quoin\Docx\DocxExporter;
 use Quoin\Docx\Tests\Support\DocxInspector;
-use Quoin\Math\Math;
+use Phactorial\Math;
 use PHPUnit\Framework\TestCase;
 
 final class MatrixEquationDocxTest extends TestCase

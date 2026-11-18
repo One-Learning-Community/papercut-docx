@@ -7,7 +7,7 @@ namespace Quoin\Docx\Tests\Map;
 use Quoin\{Column, Document, Equation, Page, Span, Table, Text};
 use Quoin\Docx\DocxExporter;
 use Quoin\Docx\Tests\Support\DocxInspector;
-use Quoin\Math\Math;
+use Phactorial\Math;
 use Quoin\Style\Style;
 use Quoin\Value\Color;
 use PHPUnit\Framework\TestCase;
