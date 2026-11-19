@@ -29,7 +29,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "quoin/core": "0.19.x-dev"
+                    "quoin/core": "0.20.x-dev"
                 }
             }
         }
@@ -38,8 +38,8 @@
         "php": "^8.4",
         "ext-zip": "*",
         "dskripchenko/php-docx": "^1.18",
-        "quoin/core": "^0.19",
-        "phactorial/phactorial": "^0.19"
+        "quoin/core": "^0.20",
+        "phactorial/phactorial": "^0.21"
     },
     "require-dev": {
         "bacon/bacon-qr-code": "^3.1",
